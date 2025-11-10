@@ -1,0 +1,46 @@
+{
+  "description": "PII masking pipeline for Predator Analytics",
+  "processors": [
+    {
+      "script": {
+        "description": "Mask EDRPOU for non-Pro users",
+        "lang": "painless",
+        "source": "if (ctx.pii_safe == false && ctx.edrpou != null) { ctx.edrpou_masked = ctx.edrpou.substring(0, 3) + '***'; ctx.remove('edrpou'); } else { ctx.edrpou_masked = ctx.edrpou; }"
+      }
+    },
+    {
+      "script": {
+        "description": "Mask company names for free users",
+        "lang": "painless",
+        "source": "if (ctx.pii_safe == false && ctx.company_name != null) { def words = ctx.company_name.splitOnToken(' '); if (words.length > 0) { ctx.company_name_masked = words[0] + ' ***'; ctx.remove('company_name'); } } else { ctx.company_name_masked = ctx.company_name; }"
+      }
+    },
+    {
+      "set": {
+        "field": "indexed_at",
+        "value": "{{_ingest.timestamp}}"
+      }
+    },
+    {
+      "script": {
+        "description": "Calculate risk score based on amount and patterns",
+        "lang": "painless",
+        "source": "if (ctx.amount != null) { ctx.risk_score = ctx.amount > 1000000 ? 0.8 : (ctx.amount > 100000 ? 0.5 : 0.2); }"
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "_index",
+        "value": "failed-{{_index}}"
+      }
+    },
+    {
+      "set": {
+        "field": "error_message",
+        "value": "{{ _ingest.on_failure_message }}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "ukrainian": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "ukrainian_stop",
+            "ukrainian_stemmer",
+            "asciifolding"
+          ]
+        },
+        "autocomplete": {
+          "type": "custom",
+          "tokenizer": "autocomplete_tokenizer",
+          "filter": [
+            "lowercase"
+          ]
+        },
+        "autocomplete_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      },
+      "tokenizer": {
+        "autocomplete_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 20,
+          "token_chars": [
+            "letter",
+            "digit"
+          ]
+        }
+      },
+      "filter": {
+        "ukrainian_stop": {
+          "type": "stop",
+          "stopwords": ["і", "в", "на", "з", "до", "та", "для", "у", "за", "від", "не", "що", "як", "це", "але", "або"]
+        },
+        "ukrainian_stemmer": {
+          "type": "stemmer",
+          "language": "russian"
+        }
+      }
+    }
+  }
+}

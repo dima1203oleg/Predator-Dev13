@@ -1,0 +1,186 @@
+# Global values for Predator Analytics v13 umbrella chart
+global:
+  imagePullPolicy: IfNotPresent
+  env:
+    # Common environment variables for all components
+    LOG_LEVEL: INFO
+    TZ: Europe/Kiev
+  secretsRef:
+    # Reference to a Kubernetes Secret containing global secrets
+    name: predator-global-secrets
+
+# Default values for subcharts
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-api
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-frontend
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 300m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+agents:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-agents
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+model-router:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-model-router
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+celery:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-celery
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+postgres:
+  enabled: true
+  # Use a stable PostgreSQL chart, e.g., Bitnami's
+  # image:
+  #   repository: postgres
+  #   tag: 14.x
+  # primary:
+  #   persistence:
+  #     size: 100Gi
+
+redis:
+  enabled: true
+  # Use a stable Redis chart, e.g., Bitnami's
+  # image:
+  #   repository: redis
+  #   tag: 6.x
+
+qdrant:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: qdrant/qdrant
+    tag: latest
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+
+opensearch:
+  enabled: true
+  # Use a stable OpenSearch chart
+  # image:
+  #   repository: opensearchproject/opensearch
+  #   tag: 2.x
+  # data:
+  #   replicaCount: 2
+  #   persistence:
+  #     size: 200Gi
+
+minio:
+  enabled: true
+  # Use a stable MinIO chart
+  # image:
+  #   repository: minio/minio
+  #   tag: latest
+  # persistence:
+  #   size: 50Gi
+
+keycloak:
+  enabled: true
+  # Use a stable Keycloak chart
+  # image:
+  #   repository: quay.io/keycloak/keycloak
+  #   tag: 21.x
+
+voice:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: predator-voice
+    tag: 13.0.0
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
+
+mlflow:
+  enabled: true
+  # Use a stable MLflow chart
+  # image:
+  #   repository: mlflow/mlflow
+  #   tag: latest
+
+neo4j:
+  enabled: false # Optional, enable if needed
+  # Use a stable Neo4j chart
+  # image:
+  #   repository: neo4j
+  #   tag: 4.x
+
+kafka:
+  enabled: true
+  # Use a stable Kafka chart, e.g., Bitnami's
+  # image:
+  #   repository: bitnami/kafka
+  #   tag: 3.x
+
+observability:
+  enabled: true
+  # Use stable charts for Prometheus, Grafana, Loki, Tempo
+  # prometheus:
+  #   enabled: true
+  # grafana:
+  #   enabled: true
+  # loki:
+  #   enabled: true
+  # tempo:
+  #   enabled: true

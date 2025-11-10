@@ -1,0 +1,24 @@
+# Default values for redis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Bitnami Redis subchart
+redis:
+  enabled: true
+  auth:
+    # password: should be set via secretsRef or ExternalSecrets
+    existingSecret: predator-secrets
+    secretKeys:
+      passwordKey: REDIS_PASSWORD
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi # Default size, overridden by umbrella values-prod.yaml
+  # Custom resources for Redis
+  resources:
+    limits:
+      cpu: 300m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: postgres
+description: A Helm chart for PostgreSQL with TimescaleDB extension
+version: 13.0.0
+appVersion: "14.x" # Assuming PostgreSQL 14.x
+dependencies:
+  - name: postgresql
+    version: "12.x.x" # Use a stable version of Bitnami's PostgreSQL chart
+    repository: "https://charts.bitnami.com/bitnami"

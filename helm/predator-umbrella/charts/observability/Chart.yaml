@@ -1,0 +1,21 @@
+apiVersion: v2
+name: observability
+description: A Helm chart for the Predator Analytics Observability stack (Prometheus, Grafana, Loki, Tempo, Alertmanager)
+version: 13.0.0
+appVersion: "13.0"
+dependencies:
+  - name: prometheus
+    version: "15.x.x" # Use a stable version of Prometheus chart
+    repository: "https://prometheus-community.github.io/helm-charts"
+  - name: grafana
+    version: "6.x.x" # Use a stable version of Grafana chart
+    repository: "https://grafana.github.io/helm-charts"
+  - name: loki
+    version: "2.x.x" # Use a stable version of Loki chart
+    repository: "https://grafana.github.io/helm-charts"
+  - name: tempo
+    version: "0.x.x" # Use a stable version of Tempo chart
+    repository: "https://grafana.github.io/helm-charts"
+  - name: alertmanager
+    version: "0.x.x" # Use a stable version of Alertmanager chart
+    repository: "https://prometheus-community.github.io/helm-charts"

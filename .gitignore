@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets & Configs
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.key
+*.crt
+kubeconfig
+*.credentials
+
+# Data & Logs
+data/raw/*
+!data/raw/.gitkeep
+logs/
+*.log
+mlruns/
+models/*.pth
+models/*.onnx
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+
+# MinIO/S3
+minio-data/
+
+# Databases
+*.db
+*.sqlite3
+*.rdb
+
+# Helm
+charts/*.tgz
+.helmignore
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Docker
+docker-compose.override.yml
+
+# OS
+Thumbs.db
+.DS_Store

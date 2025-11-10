@@ -1,0 +1,9 @@
+apiVersion: v2
+name: neo4j
+description: A Helm chart for Neo4j graph database
+version: 13.0.0
+appVersion: "4.x" # Assuming Neo4j 4.x
+dependencies:
+  - name: neo4j
+    version: "5.x.x" # Use a stable version of Neo4j chart
+    repository: "https://neo4j.github.io/helm-charts"

@@ -1,0 +1,200 @@
+groups:
+  - name: predator_slo_alerts
+    interval: 30s
+    rules:
+      # API Latency SLO: p95 < 800ms for 99% of time
+      - alert: APILatencyHigh
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          slo: latency
+        annotations:
+          summary: "API p95 latency high: {{ $value }}s"
+          description: "API endpoint {{ $labels.endpoint }} has p95 latency {{ $value }}s > 800ms SLO"
+
+      # API Error Rate: < 1% errors
+      - alert: APIErrorRateHigh
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.01
+        for: 3m
+        labels:
+          severity: critical
+          component: api
+          slo: availability
+        annotations:
+          summary: "API error rate high: {{ $value | humanizePercentage }}"
+          description: "API has {{ $value | humanizePercentage }} 5xx errors on {{ $labels.endpoint }}"
+
+      # OpenSearch Query Latency: p95 < 500ms
+      - alert: OpenSearchLatencyHigh
+        expr: histogram_quantile(0.95, rate(opensearch_query_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: opensearch
+          slo: latency
+        annotations:
+          summary: "OpenSearch query p95 latency high: {{ $value }}s"
+
+      # Qdrant Search Latency: < 300ms
+      - alert: QdrantLatencyHigh
+        expr: histogram_quantile(0.95, rate(qdrant_search_duration_seconds_bucket[5m])) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          component: qdrant
+          slo: latency
+        annotations:
+          summary: "Qdrant search p95 latency high: {{ $value }}s"
+
+      # Voice STT Latency: p95 < 2.5s
+      - alert: VoiceSTTLatencyHigh
+        expr: histogram_quantile(0.95, rate(voice_stt_duration_seconds_bucket[5m])) > 2.5
+        for: 5m
+        labels:
+          severity: warning
+          component: voice
+          slo: latency
+        annotations:
+          summary: "Voice STT p95 latency high: {{ $value }}s"
+
+      # CDC Lag: < 100 messages
+      - alert: CDCLagHigh
+        expr: cdc_vector_lag > 100
+        for: 2m
+        labels:
+          severity: warning
+          component: cdc
+          slo: freshness
+        annotations:
+          summary: "CDC lag high: {{ $value }} messages"
+          description: "Vector sync lag is {{ $value }} messages (threshold: 100)"
+
+      # Celery Queue Growing
+      - alert: CeleryQueueGrowing
+        expr: rate(celery_queue_length[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: celery
+        annotations:
+          summary: "Celery queue growing for {{ $labels.queue }}"
+
+      # Burn Rate Alerts (1h window for 99.99% SLA)
+      - alert: BurnRateHigh1h
+        expr: (sum(rate(http_requests_total{status=~"5.."}[1h])) / sum(rate(http_requests_total[1h]))) > (14.4 * 0.0001)
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+          slo: availability
+          window: 1h
+        annotations:
+          summary: "Error budget burn rate critical (1h)"
+          description: "Burning error budget 14.4x faster than allowed (1h window)"
+
+      # Burn Rate 6h window
+      - alert: BurnRateHigh6h
+        expr: (sum(rate(http_requests_total{status=~"5.."}[6h])) / sum(rate(http_requests_total[6h]))) > (6 * 0.0001)
+        for: 15m
+        labels:
+          severity: warning
+          component: api
+          slo: availability
+          window: 6h
+        annotations:
+          summary: "Error budget burn rate high (6h)"
+          description: "Burning error budget 6x faster than allowed (6h window)"
+
+  - name: predator_resource_alerts
+    interval: 30s
+    rules:
+      # OpenSearch Heap High
+      - alert: OpenSearchHeapHigh
+        expr: opensearch_jvm_memory_heap_used_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: opensearch
+        annotations:
+          summary: "OpenSearch heap usage high: {{ $value }}%"
+
+      # PostgreSQL Connection Saturation
+      - alert: PostgresConnectionsSaturated
+        expr: (pg_stat_database_numbackends / pg_settings_max_connections) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: postgres
+        annotations:
+          summary: "PostgreSQL connections saturated: {{ $value | humanizePercentage }}"
+
+      # Redis Memory High
+      - alert: RedisMemoryHigh
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis memory usage high: {{ $value | humanizePercentage }}"
+
+      # Ollama GPU Utilization (if available)
+      - alert: OllamaGPUHigh
+        expr: ollama_gpu_utilization > 95
+        for: 10m
+        labels:
+          severity: info
+          component: ollama
+        annotations:
+          summary: "Ollama GPU utilization high: {{ $value }}%"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint=~"/data|/mnt/.*"} / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}: {{ $value | humanizePercentage }}"
+
+  - name: predator_self_heal_triggers
+    interval: 1m
+    rules:
+      # AutoHeal trigger for pod restart
+      - alert: PodRestartLoop
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: "{{ $labels.pod }}"
+          action: autoheal_restart
+        annotations:
+          summary: "Pod {{ $labels.pod }} restarting frequently"
+          playbook: "autoheal/restart_loop"
+
+      # AutoHeal trigger for dependency fix
+      - alert: ServiceUnavailable
+        expr: up{job=~".*predator.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: "{{ $labels.job }}"
+          action: autoheal_depfix
+        annotations:
+          summary: "Service {{ $labels.job }} unavailable"
+          playbook: "autoheal/depfix"
+
+      # Model drift detection
+      - alert: ModelDriftHigh
+        expr: model_psi_score > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          component: mlflow
+          action: self_improvement
+        annotations:
+          summary: "Model {{ $labels.model }} drift high: PSI {{ $value }}"
+          playbook: "self_improvement/retrain"

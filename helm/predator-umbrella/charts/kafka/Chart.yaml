@@ -1,0 +1,9 @@
+apiVersion: v2
+name: kafka
+description: A Helm chart for Apache Kafka
+version: 13.0.0
+appVersion: "3.x" # Assuming Kafka 3.x
+dependencies:
+  - name: kafka
+    version: "20.x.x" # Use a stable version of Bitnami's Kafka chart
+    repository: "https://charts.bitnami.com/bitnami"

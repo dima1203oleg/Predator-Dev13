@@ -1,0 +1,9 @@
+apiVersion: v2
+name: redis
+description: A Helm chart for Redis
+version: 13.0.0
+appVersion: "6.x" # Assuming Redis 6.x
+dependencies:
+  - name: redis
+    version: "17.x.x" # Use a stable version of Bitnami's Redis chart
+    repository: "https://charts.bitnami.com/bitnami"

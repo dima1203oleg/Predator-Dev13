@@ -1,0 +1,93 @@
+# Default values for observability.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Prometheus subchart
+prometheus:
+  enabled: true
+  alertmanager:
+    enabled: false # Managed by the alertmanager subchart
+  kubeStateMetrics:
+    enabled: true
+  nodeExporter:
+    enabled: true
+  server:
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2048Mi
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+
+# Enable the Grafana subchart
+grafana:
+  enabled: true
+  admin:
+    existingSecret: predator-secrets
+    secretKey: GRAFANA_ADMIN_PASSWORD
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+# Enable the Loki subchart
+loki:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+# Enable the Tempo subchart
+tempo:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+# Enable the Alertmanager subchart
+alertmanager:
+  enabled: true
+  resources:
+    limits:
+      cpu: 300m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+      receiver: 'telegram'
+    receivers:
+      - name: 'telegram'
+        telegram_configs:
+          - bot_token: predator-secrets
+            api_url: "https://api.telegram.org"
+            chat_id: "-1234567890" # Replace with actual chat ID
+            message: '{{ template "alertmanager.default.message" . }}'
+
+# Override global settings if needed
+global:
+  observability:
+    auth:
+      existingSecret: predator-secrets
+      secretKeys:
+        grafanaAdminPasswordKey: GRAFANA_ADMIN_PASSWORD
+        telegramBotTokenKey: TELEGRAM_BOT_TOKEN

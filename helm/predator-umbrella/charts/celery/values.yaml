@@ -1,0 +1,87 @@
+# Default values for celery.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: predator-celery
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "13.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8002 # Example port for Celery Flower or other monitoring
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+keda:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  pollingInterval: 30 # seconds
+  cooldownPeriod: 300 # seconds
+  triggers:
+    - type: rabbitmq
+      metadata:
+        queueName: celery
+        queueLength: "5"
+        host: rabbitmq-cluster-rabbitmq.default.svc.cluster.local:5672 # Example RabbitMQ host
+        # Or for Kafka:
+        # type: kafka
+        # metadata:
+        #   topic: celery-tasks
+        #   lagThreshold: "10"
+        #   bootstrapServers: kafka-brokers.default.svc.cluster.local:9092
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env: {}
+  # CELERY_BROKER_URL: amqp://user:password@rabbitmq:5672//
+  # CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+secretsRef:
+  name: predator-global-secrets # Reference to the global secrets

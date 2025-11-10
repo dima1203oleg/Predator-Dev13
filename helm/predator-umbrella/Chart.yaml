@@ -1,0 +1,55 @@
+apiVersion: v2
+name: predator-umbrella
+description: A Helm umbrella chart for Predator Analytics v13
+version: 13.0.0
+appVersion: "13.0"
+
+dependencies:
+  - name: api
+    version: 13.0.0
+    repository: "file://charts/api"
+  - name: frontend
+    version: 13.0.0
+    repository: "file://charts/frontend"
+  - name: agents
+    version: 13.0.0
+    repository: "file://charts/agents"
+  - name: model-router
+    version: 13.0.0
+    repository: "file://charts/model-router"
+  - name: celery
+    version: 13.0.0
+    repository: "file://charts/celery"
+  - name: postgres
+    version: 13.0.0
+    repository: "file://charts/postgres"
+  - name: redis
+    version: 13.0.0
+    repository: "file://charts/redis"
+  - name: qdrant
+    version: 13.0.0
+    repository: "file://charts/qdrant"
+  - name: opensearch
+    version: 13.0.0
+    repository: "file://charts/opensearch"
+  - name: minio
+    version: 13.0.0
+    repository: "file://charts/minio"
+  - name: keycloak
+    version: 13.0.0
+    repository: "file://charts/keycloak"
+  - name: voice
+    version: 13.0.0
+    repository: "file://charts/voice"
+  - name: mlflow
+    version: 13.0.0
+    repository: "file://charts/mlflow"
+  - name: neo4j
+    version: 13.0.0
+    repository: "file://charts/neo4j"
+  - name: kafka
+    version: 13.0.0
+    repository: "file://charts/kafka"
+  - name: observability
+    version: 13.0.0
+    repository: "file://charts/observability"

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: mlflow
+description: A Helm chart for MLflow
+version: 13.0.0
+appVersion: "latest" # MLflow image tag
+dependencies:
+  - name: mlflow
+    version: "1.x.x" # Use a stable version of MLflow chart
+    repository: "https://larribas.me/helm-charts" # Example repository, replace with official if available

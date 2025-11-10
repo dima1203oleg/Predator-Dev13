@@ -1,0 +1,5 @@
+apiVersion: v2
+name: qdrant
+description: A Helm chart for Qdrant vector database
+version: 13.0.0
+appVersion: "latest" # Qdrant image tag

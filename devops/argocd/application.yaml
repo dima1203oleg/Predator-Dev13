@@ -1,0 +1,180 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: predator-umbrella
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: predator
+  
+  source:
+    repoURL: https://github.com/your-org/predator-analytics.git
+    targetRevision: main
+    path: helm/predator-umbrella
+    helm:
+      valueFiles:
+        - values-prod.yaml
+      parameters:
+        - name: global.env.LOG_LEVEL
+          value: INFO
+        - name: global.env.ENVIRONMENT
+          value: production
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: predator
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health assessment
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/replicas
+  
+  # Sync waves for controlled deployment order
+  syncPolicy:
+    syncOptions:
+      - RespectIgnoreDifferences=true
+  
+  # Progressive rollout strategy
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {duration: 5m}
+        - setWeight: 40
+        - pause: {duration: 5m}
+        - setWeight: 60
+        - pause: {duration: 5m}
+        - setWeight: 80
+        - pause: {duration: 5m}
+      analysis:
+        templates:
+          - templateName: predator-success-rate
+        args:
+          - name: service-name
+            value: predator-api
+      trafficRouting:
+        istio:
+          virtualService:
+            name: predator-vsvc
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: predator
+  namespace: argocd
+spec:
+  description: Predator Analytics Production Project
+  
+  sourceRepos:
+    - https://github.com/your-org/predator-analytics.git
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+  
+  destinations:
+    - namespace: predator
+      server: https://kubernetes.default.svc
+    - namespace: predator-*
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  
+  roles:
+    - name: admin
+      description: Admin role for Predator project
+      policies:
+        - p, proj:predator:admin, applications, *, predator/*, allow
+      groups:
+        - predator-admins
+    
+    - name: developer
+      description: Developer role with limited permissions
+      policies:
+        - p, proj:predator:developer, applications, get, predator/*, allow
+        - p, proj:predator:developer, applications, sync, predator/*, allow
+      groups:
+        - predator-developers
+    
+    - name: viewer
+      description: Read-only viewer role
+      policies:
+        - p, proj:predator:viewer, applications, get, predator/*, allow
+      groups:
+        - predator-viewers
+  
+  syncWindows:
+    - kind: allow
+      schedule: '0 2 * * *'
+      duration: 2h
+      applications:
+        - '*'
+      manualSync: true
+    - kind: deny
+      schedule: '0 9-17 * * 1-5'
+      duration: 8h
+      applications:
+        - '*'
+      manualSync: false
+      clusters:
+        - '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: predator-success-rate
+  namespace: predator
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: success-rate
+      interval: 1m
+      successCondition: result[0] >= 0.99
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus:9090
+          query: |
+            sum(rate(http_requests_total{service="{{args.service-name}}",status!~"5.."}[5m])) 
+            / 
+            sum(rate(http_requests_total{service="{{args.service-name}}"}[5m]))
+    
+    - name: latency-p95
+      interval: 1m
+      successCondition: result[0] < 0.8
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus:9090
+          query: |
+            histogram_quantile(0.95, 
+              rate(http_request_duration_seconds_bucket{service="{{args.service-name}}"}[5m])
+            )

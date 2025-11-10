@@ -1,0 +1,43 @@
+# Default values for postgres.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Bitnami PostgreSQL subchart
+postgresql:
+  enabled: true
+  auth:
+    database: predator_db
+    username: predator_user
+    # password: should be set via secretsRef or ExternalSecrets
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi # Default size, overridden by umbrella values-prod.yaml
+    # Add TimescaleDB extension
+    initdb:
+      scripts:
+        create-timescaledb.sh: |
+          #!/bin/bash
+          set -e
+          psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+              CREATE EXTENSION IF NOT EXISTS timescaledb;
+          EOSQL
+  # Custom resources for PostgreSQL
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+
+# Override global settings if needed
+global:
+  postgresql:
+    auth:
+      # Pass through secretsRef from umbrella chart
+      existingSecret: "predator-secrets"
+      secretKeys:
+        adminPasswordKey: POSTGRES_PASSWORD
+        userPasswordKey: POSTGRES_PASSWORD
+        replicationPasswordKey: POSTGRES_REPLICATION_PASSWORD

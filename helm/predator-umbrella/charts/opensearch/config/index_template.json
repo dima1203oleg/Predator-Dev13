@@ -1,0 +1,107 @@
+{
+  "index_patterns": ["pa-*"],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": 3,
+        "number_of_replicas": 2,
+        "refresh_interval": "30s",
+        "translog": {
+          "durability": "async",
+          "sync_interval": "30s"
+        },
+        "merge": {
+          "policy": {
+            "max_merged_segment": "5gb"
+          }
+        },
+        "codec": "best_compression",
+        "default_pipeline": "pii_masking_pipeline"
+      }
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "pk": {
+          "type": "keyword"
+        },
+        "op_hash": {
+          "type": "keyword"
+        },
+        "hs_code": {
+          "type": "keyword",
+          "fields": {
+            "text": {
+              "type": "text",
+              "analyzer": "standard"
+            }
+          }
+        },
+        "amount": {
+          "type": "double",
+          "doc_values": true
+        },
+        "qty": {
+          "type": "double",
+          "doc_values": true
+        },
+        "country": {
+          "type": "keyword",
+          "fields": {
+            "text": {
+              "type": "text"
+            }
+          }
+        },
+        "edrpou": {
+          "type": "keyword"
+        },
+        "company_name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          },
+          "analyzer": "ukrainian"
+        },
+        "customs_point": {
+          "type": "keyword"
+        },
+        "date": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "ukrainian"
+        },
+        "meta": {
+          "type": "object",
+          "enabled": false
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "pii_safe": {
+          "type": "boolean"
+        },
+        "enriched": {
+          "type": "boolean"
+        },
+        "risk_score": {
+          "type": "float"
+        },
+        "indexed_at": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "priority": 100,
+  "version": 1,
+  "_meta": {
+    "description": "Template for Predator Analytics customs data with PII masking"
+  }
+}

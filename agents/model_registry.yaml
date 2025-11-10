@@ -1,0 +1,357 @@
+# Model Registry: 58 LLM Models (Hybrid Local/API)
+# Predator Analytics v13 - Router with Primary/Fallback/Embed/Vision
+
+# ==================== OLLAMA LOCAL MODELS ====================
+ollama:
+  base_url: "http://ollama:11434"
+  models:
+    # Embeddings (768-dim)
+    - name: "nomic-embed-text"
+      type: "embed"
+      dim: 768
+      max_tokens: 8192
+      use_case: "primary_embed"
+      
+    - name: "mxbai-embed-large"
+      type: "embed"
+      dim: 1024
+      max_tokens: 512
+      use_case: "fallback_embed"
+      
+    - name: "bge-m3"
+      type: "embed"
+      dim: 1024
+      max_tokens: 8192
+      use_case: "multilingual_embed"
+    
+    # Chat/Completion Models
+    - name: "gemma2:2b"
+      type: "chat"
+      context: 8192
+      use_case: "fast_qa"
+      
+    - name: "gemma2:9b"
+      type: "chat"
+      context: 8192
+      use_case: "general_chat"
+      
+    - name: "gemma2:27b"
+      type: "chat"
+      context: 8192
+      use_case: "complex_reasoning"
+      
+    - name: "llama3.1:8b"
+      type: "chat"
+      context: 128000
+      use_case: "long_context"
+      
+    - name: "llama3.1:70b"
+      type: "chat"
+      context: 128000
+      use_case: "expert_analysis"
+      
+    - name: "mistral:7b"
+      type: "chat"
+      context: 32768
+      use_case: "balanced"
+      
+    - name: "mistral-nemo:12b"
+      type: "chat"
+      context: 128000
+      use_case: "multilingual"
+      
+    - name: "mistral-small:22b"
+      type: "chat"
+      context: 32768
+      use_case: "enterprise"
+      
+    - name: "dolphin-mixtral:8x7b"
+      type: "chat"
+      context: 32768
+      use_case: "creative_writing"
+      
+    - name: "llama3-groq-tool-use:8b"
+      type: "chat"
+      context: 8192
+      use_case: "function_calling"
+      tools: true
+      
+    - name: "openhermes:7b"
+      type: "chat"
+      context: 8192
+      use_case: "assistant"
+      
+    - name: "codellama:13b"
+      type: "chat"
+      context: 16384
+      use_case: "code_gen"
+      
+    - name: "phi3:14b"
+      type: "chat"
+      context: 128000
+      use_case: "lightweight_reasoning"
+
+# ==================== API MODELS (External) ====================
+api_models:
+  # Google Gemini
+  - provider: "google"
+    name: "gemini-pro-1.5-flash"
+    type: "chat"
+    context: 1000000
+    use_case: "ultra_long_context"
+    api_key_env: "GOOGLE_API_KEY"
+    
+  - provider: "google"
+    name: "gemini-pro"
+    type: "chat"
+    context: 32000
+    use_case: "multimodal"
+    vision: true
+    
+  # Anthropic Claude
+  - provider: "anthropic"
+    name: "claude-3-haiku-20240307"
+    type: "chat"
+    context: 200000
+    use_case: "fast_accurate"
+    api_key_env: "ANTHROPIC_API_KEY"
+    
+  - provider: "anthropic"
+    name: "claude-3-sonnet-20240229"
+    type: "chat"
+    context: 200000
+    use_case: "balanced_reasoning"
+    
+  - provider: "anthropic"
+    name: "claude-3-opus-20240229"
+    type: "chat"
+    context: 200000
+    use_case: "expert_complex"
+    
+  # Groq (Fast Inference)
+  - provider: "groq"
+    name: "mixtral-8x7b-32768"
+    type: "chat"
+    context: 32768
+    use_case: "fast_mixtral"
+    api_key_env: "GROQ_API_KEY"
+    
+  - provider: "groq"
+    name: "llama-3.1-70b-versatile"
+    type: "chat"
+    context: 128000
+    use_case: "fast_llama"
+    
+  - provider: "groq"
+    name: "llama-3.1-8b-instant"
+    type: "chat"
+    context: 8192
+    use_case: "instant_response"
+    
+  # Mistral AI
+  - provider: "mistral"
+    name: "mistral-large-latest"
+    type: "chat"
+    context: 32768
+    use_case: "enterprise_reasoning"
+    api_key_env: "MISTRAL_API_KEY"
+    
+  - provider: "mistral"
+    name: "mistral-medium-latest"
+    type: "chat"
+    context: 32768
+    use_case: "balanced_cost"
+    
+  - provider: "mistral"
+    name: "mistral-small-latest"
+    type: "chat"
+    context: 32768
+    use_case: "fast_cheap"
+    
+  # OpenAI (via Azure or Direct)
+  - provider: "openai"
+    name: "gpt-4o-mini"
+    type: "chat"
+    context: 128000
+    use_case: "cost_effective"
+    api_key_env: "OPENAI_API_KEY"
+    
+  - provider: "openai"
+    name: "gpt-4o"
+    type: "chat"
+    context: 128000
+    use_case: "flagship"
+    vision: true
+    
+  - provider: "openai"
+    name: "gpt-4-turbo"
+    type: "chat"
+    context: 128000
+    use_case: "general_purpose"
+    
+  # DeepSeek
+  - provider: "deepseek"
+    name: "deepseek-chat"
+    type: "chat"
+    context: 32768
+    use_case: "cost_leader"
+    api_key_env: "DEEPSEEK_API_KEY"
+    
+  - provider: "deepseek"
+    name: "deepseek-coder"
+    type: "chat"
+    context: 16384
+    use_case: "code_expert"
+    
+  # AI21 Labs
+  - provider: "ai21"
+    name: "jamba-1.5-large"
+    type: "chat"
+    context: 256000
+    use_case: "ultra_context"
+    api_key_env: "AI21_API_KEY"
+    
+  - provider: "ai21"
+    name: "jamba-1.5-mini"
+    type: "chat"
+    context: 256000
+    use_case: "fast_ultra_context"
+    
+  # Cohere
+  - provider: "cohere"
+    name: "command-r-plus"
+    type: "chat"
+    context: 128000
+    use_case: "rag_optimized"
+    api_key_env: "COHERE_API_KEY"
+    
+  - provider: "cohere"
+    name: "command-r"
+    type: "chat"
+    context: 128000
+    use_case: "balanced_rag"
+    
+  - provider: "cohere"
+    name: "embed-multilingual-v3.0"
+    type: "embed"
+    dim: 1024
+    use_case: "api_embed"
+    
+  # Together AI
+  - provider: "together"
+    name: "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
+    type: "chat"
+    context: 130000
+    use_case: "largest_open"
+    api_key_env: "TOGETHER_API_KEY"
+    
+  - provider: "together"
+    name: "mistralai/Mixtral-8x22B-Instruct-v0.1"
+    type: "chat"
+    context: 65536
+    use_case: "large_mixture"
+
+# ==================== ROUTING STRATEGY ====================
+routing:
+  # Primary model for each agent/task
+  agents:
+    Retriever:
+      primary: "gemma2:9b"
+      fallback: ["mistral:7b", "gpt-4o-mini"]
+      embed: "nomic-embed-text"
+      
+    Miner:
+      primary: "llama3.1:70b"
+      fallback: ["claude-3-sonnet-20240229", "mistral-large-latest"]
+      
+    Arbiter:
+      # Multi-model voting (5+ models)
+      models:
+        - "gemma2:27b"
+        - "claude-3-sonnet-20240229"
+        - "gpt-4o"
+        - "mistral-large-latest"
+        - "llama3.1:70b"
+      voting: "weighted"  # weighted by confidence
+      
+    Forecast:
+      primary: "llama3.1:70b"
+      fallback: ["claude-3-opus-20240229"]
+      
+    CorruptionDetector:
+      primary: "claude-3-sonnet-20240229"
+      fallback: ["gpt-4o", "llama3.1:70b"]
+      
+    LobbyMap:
+      primary: "gpt-4o"
+      fallback: ["claude-3-opus-20240229"]
+      vision: "gemini-pro"  # For analyzing infographics
+      
+    QueryPlanner:
+      primary: "gemma2:9b"
+      fallback: ["mistral:7b"]
+      
+    ContentRelevance:
+      primary: "command-r-plus"  # RAG-optimized
+      fallback: ["gemma2:27b"]
+      
+    PersonalFeed:
+      primary: "claude-3-sonnet-20240229"
+      fallback: ["gpt-4o-mini"]
+      
+    LoRATrainer:
+      primary: "llama3.1:70b"  # For generating training data
+      
+    AutoHeal:
+      primary: "gpt-4o-mini"
+      fallback: ["gemma2:9b"]
+      
+    SelfImprovement:
+      primary: "claude-3-opus-20240229"
+      fallback: ["gpt-4o"]
+  
+  # Retry/Throttling
+  retry:
+    max_attempts: 3
+    backoff_factor: 2  # Exponential: 1s, 2s, 4s
+    timeout: 60  # seconds
+    
+  # Rate Limits (per minute)
+  rate_limits:
+    ollama: 1000
+    google: 60
+    anthropic: 50
+    groq: 100
+    openai: 60
+    deepseek: 100
+    ai21: 50
+    cohere: 100
+    together: 60
+
+# ==================== WARM-UP STRATEGY ====================
+warmup:
+  enabled: true
+  models:
+    - "gemma2:9b"
+    - "mistral:7b"
+    - "nomic-embed-text"
+  batch_size: 10
+  prompt: "Привіт! Це тестовий запит для прогріву моделі."
+
+# ==================== CACHING ====================
+caching:
+  enabled: true
+  backend: "redis"
+  ttl: 1800  # 30 minutes
+  key_prefix: "model_cache:"
+  hash_prompt: true  # Hash full prompt for cache key
+
+# ==================== BATCHING ====================
+batching:
+  enabled: true
+  embed:
+    batch_size: 512
+    max_wait: 1000  # ms
+  chat:
+    batch_size: 10
+    max_wait: 500  # ms

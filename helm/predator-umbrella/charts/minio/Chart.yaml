@@ -1,0 +1,9 @@
+apiVersion: v2
+name: minio
+description: A Helm chart for MinIO object storage
+version: 13.0.0
+appVersion: "latest" # MinIO image tag
+dependencies:
+  - name: minio
+    version: "12.x.x" # Use a stable version of MinIO chart
+    repository: "https://charts.min.io/"

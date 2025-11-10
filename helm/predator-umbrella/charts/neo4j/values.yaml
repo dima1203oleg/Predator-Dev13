@@ -1,0 +1,28 @@
+# Default values for neo4j.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Neo4j subchart
+neo4j:
+  enabled: false # Disabled by default, enable if needed
+  edition: community # or enterprise
+  acceptLicenseAgreement: "yes"
+  # Custom resources for Neo4j
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  # Persistence for Neo4j data
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClassName: "" # Use default storage class if not specified
+  # Neo4j admin password
+  auth:
+    # password: should be set via secretsRef or ExternalSecrets
+    existingSecret: predator-secrets
+    secretKeys:
+      passwordKey: NEO4J_PASSWORD

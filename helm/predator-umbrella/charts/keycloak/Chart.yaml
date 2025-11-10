@@ -1,0 +1,9 @@
+apiVersion: v2
+name: keycloak
+description: A Helm chart for Keycloak Identity and Access Management
+version: 13.0.0
+appVersion: "21.x" # Assuming Keycloak 21.x
+dependencies:
+  - name: keycloak
+    version: "19.x.x" # Use a stable version of Bitnami's Keycloak chart
+    repository: "https://charts.bitnami.com/bitnami"

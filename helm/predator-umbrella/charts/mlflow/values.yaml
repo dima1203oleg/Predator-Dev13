@@ -1,0 +1,47 @@
+# Default values for mlflow.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the MLflow subchart
+mlflow:
+  enabled: true
+  image:
+    repository: mlflow/mlflow
+    tag: latest
+  # MLflow server configuration
+  backend:
+    store:
+      type: postgresql
+      host: postgresql.{{ .Release.Namespace }}.svc.cluster.local
+      port: 5432
+      database: mlflow_db
+      username: mlflow_user
+      existingSecret: predator-secrets
+      secretKeys:
+        passwordKey: MLFLOW_DATABASE_PASSWORD
+  artifact:
+    store:
+      type: s3
+      bucket: mlflow-artifacts
+      endpoint: http://minio.{{ .Release.Namespace }}.svc.cluster.local:9000
+      existingSecret: predator-secrets
+      secretKeys:
+        accessKey: MINIO_ACCESS_KEY
+        secretKey: MINIO_SECRET_KEY
+  # Custom resources for MLflow
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+
+# Override global settings if needed
+global:
+  mlflow:
+    auth:
+      # Pass through secretsRef from umbrella chart
+      existingSecret: predator-secrets
+      secretKeys:
+        databasePasswordKey: MLFLOW_DATABASE_PASSWORD

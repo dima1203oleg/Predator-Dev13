@@ -1,0 +1,37 @@
+# Default values for keycloak.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Bitnami Keycloak subchart
+keycloak:
+  enabled: true
+  auth:
+    adminUser: admin
+    # adminPassword: should be set via secretsRef or ExternalSecrets
+  extraEnvVars:
+    - name: KEYCLOAK_ADMIN
+      value: admin
+    - name: KEYCLOAK_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: predator-secrets
+          key: KEYCLOAK_ADMIN_PASSWORD
+  # Database configuration
+  postgresql:
+    enabled: false # Use the external PostgreSQL from the umbrella chart
+  externalDatabase:
+    host: postgresql.{{ .Release.Namespace }}.svc.cluster.local # Assuming Bitnami PostgreSQL chart name
+    port: 5432
+    database: predator_db
+    username: predator_user
+    existingSecret: predator-secrets
+    secretKeys:
+      passwordKey: POSTGRES_PASSWORD
+  # Custom resources for Keycloak
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi

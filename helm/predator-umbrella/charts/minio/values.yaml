@@ -1,0 +1,31 @@
+# Default values for minio.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the MinIO subchart
+minio:
+  enabled: true
+  accessKey: minioadmin
+  secretKey: minioadmin # Should be overridden by secretsRef or ExternalSecrets
+  persistence:
+    enabled: true
+    size: 50Gi # Default size, overridden by umbrella values-prod.yaml
+    storageClassName: "" # Use default storage class if not specified
+  # Custom resources for MinIO
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+# Override global settings if needed
+global:
+  minio:
+    auth:
+      # Pass through secretsRef from umbrella chart
+      existingSecret: predator-secrets
+      secretKeys:
+        accessKey: MINIO_ACCESS_KEY
+        secretKey: MINIO_SECRET_KEY

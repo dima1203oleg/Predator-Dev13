@@ -1,0 +1,5 @@
+apiVersion: v2
+name: celery
+description: A Helm chart for Celery workers and RabbitMQ/Kafka integration
+version: 13.0.0
+appVersion: "13.0"

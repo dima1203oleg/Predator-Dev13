@@ -1,0 +1,108 @@
+{
+  "index_patterns": ["pa-*-v*"],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "refresh_interval": "5s",
+        "codec": "best_compression",
+        "max_result_window": 50000
+      },
+      "analysis": {
+        "analyzer": {
+          "ukrainian_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase", "ukrainian_stop", "ukrainian_stemmer"]
+          }
+        },
+        "filter": {
+          "ukrainian_stop": {
+            "type": "stop",
+            "stopwords": "_ukrainian_"
+          },
+          "ukrainian_stemmer": {
+            "type": "stemmer",
+            "language": "ukrainian"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "pk": {
+          "type": "keyword"
+        },
+        "op_hash": {
+          "type": "keyword"
+        },
+        "hs_code": {
+          "type": "keyword",
+          "fields": {
+            "text": {
+              "type": "text",
+              "analyzer": "standard"
+            }
+          }
+        },
+        "date": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "amount": {
+          "type": "scaled_float",
+          "scaling_factor": 100
+        },
+        "qty": {
+          "type": "float"
+        },
+        "country_code": {
+          "type": "keyword"
+        },
+        "edrpou": {
+          "type": "keyword",
+          "fields": {
+            "text": {
+              "type": "text",
+              "analyzer": "standard"
+            }
+          }
+        },
+        "company_name": {
+          "type": "text",
+          "analyzer": "ukrainian_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "customs_office": {
+          "type": "keyword"
+        },
+        "attrs": {
+          "type": "object",
+          "dynamic": true
+        },
+        "indexed_at": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "@timestamp": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "priority": 100,
+  "version": 1,
+  "_meta": {
+    "description": "Predator Analytics v13 - Index template for customs/tax/registry data with Ukrainian analyzer"
+  }
+}

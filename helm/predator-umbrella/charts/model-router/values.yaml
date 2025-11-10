@@ -1,0 +1,92 @@
+# Default values for model-router.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: predator-model-router
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "13.0.0"
+
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+  models:
+    - nomic-embed-text
+    - mxbai-embed-large
+    - bge-m3
+    - gemma:2b
+    - mistral
+    - llama2
+    - dolphin-mistral
+  warmUp:
+    enabled: true
+    initContainerImage: busybox:latest # A lightweight image for initContainer
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        for model in {{ join " " .Values.ollama.models }}; do
+          echo "Warming up $model...";
+          /usr/local/bin/ollama pull $model;
+        done
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080 # Default port for Ollama and model router
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env: {}
+  # MODEL_ROUTER_CONFIG_PATH: /app/config/model_router.yaml
+
+secretsRef:
+  name: predator-global-secrets # Reference to the global secrets

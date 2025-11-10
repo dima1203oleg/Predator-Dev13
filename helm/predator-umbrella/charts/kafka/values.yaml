@@ -1,0 +1,49 @@
+# Default values for kafka.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the Bitnami Kafka subchart
+kafka:
+  enabled: true
+  replicaCount: 3 # Default size, overridden by umbrella values-prod.yaml
+  # Kafka authentication and authorization
+  auth:
+    clientProtocol: plaintext # or tls
+    interBrokerProtocol: plaintext # or tls
+  # Custom resources for Kafka
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  # Persistence for Kafka data
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClassName: "" # Use default storage class if not specified
+  # Zookeeper configuration (Kafka dependency)
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+
+# Override global settings if needed
+global:
+  kafka:
+    auth:
+      # Pass through secretsRef from umbrella chart
+      existingSecret: predator-secrets
+      secretKeys:
+        clientUsersPasswordKey: KAFKA_CLIENT_USERS_PASSWORD
+        interBrokerUserPasswordKey: KAFKA_INTER_BROKER_USER_PASSWORD

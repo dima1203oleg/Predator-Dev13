@@ -1,0 +1,52 @@
+{
+  "description": "PII Masking Pipeline for Predator Analytics: masks EDRPOU and company names for free/client tiers",
+  "processors": [
+    {
+      "script": {
+        "description": "Mask EDRPOU (tax ID) if access_level < Pro",
+        "lang": "painless",
+        "source": "if (ctx['_ingest'] != null && ctx['_ingest']['access_level'] != null && ctx['_ingest']['access_level'] != 'Pro') { if (ctx['edrpou'] != null) { ctx['edrpou_masked'] = ctx['edrpou'].substring(0, 2) + '******'; ctx['edrpou'] = '***'; } }"
+      }
+    },
+    {
+      "script": {
+        "description": "Mask company_name for free/client tiers",
+        "lang": "painless",
+        "source": "if (ctx['_ingest'] != null && ctx['_ingest']['access_level'] != null && ctx['_ingest']['access_level'] != 'Pro') { if (ctx['company_name'] != null) { def words = ctx['company_name'].splitOnToken(' '); if (words.length > 2) { ctx['company_name_masked'] = words[0] + ' *** ' + words[words.length - 1]; } else { ctx['company_name_masked'] = '***'; } ctx['company_name'] = '***'; } }"
+      }
+    },
+    {
+      "set": {
+        "field": "pii_masked",
+        "value": true,
+        "if": "ctx['_ingest'] != null && ctx['_ingest']['access_level'] != 'Pro'"
+      }
+    },
+    {
+      "set": {
+        "field": "indexed_at",
+        "value": "{{_ingest.timestamp}}"
+      }
+    },
+    {
+      "remove": {
+        "field": "_ingest",
+        "ignore_missing": true
+      }
+    }
+  ],
+  "on_failure": [
+    {
+      "set": {
+        "field": "_index",
+        "value": "failed-{{_index}}"
+      }
+    },
+    {
+      "set": {
+        "field": "error_message",
+        "value": "{{ _ingest.on_failure_message }}"
+      }
+    }
+  ]
+}

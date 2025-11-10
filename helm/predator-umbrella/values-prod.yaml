@@ -1,0 +1,149 @@
+# Production specific values for Predator Analytics v13 umbrella chart
+global:
+  env:
+    LOG_LEVEL: INFO
+    MOCKS_ENABLED: "false"
+  secretsRef:
+    name: predator-prod-secrets
+
+api:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+agents:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
+
+model-router:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
+
+celery:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+postgres:
+  primary:
+    persistence:
+      size: 200Gi # Larger persistence for production
+
+redis:
+  master:
+    persistence:
+      size: 10Gi # Larger persistence for production
+
+qdrant:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4096Mi
+    requests:
+      cpu: 1000m
+      memory: 2048Mi
+
+opensearch:
+  data:
+    replicaCount: 3
+    persistence:
+      size: 500Gi # Larger persistence for production
+
+minio:
+  persistence:
+    size: 200Gi # Larger persistence for production
+
+voice:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4096Mi
+    requests:
+      cpu: 2000m
+      memory: 2048Mi
+
+mlflow:
+  enabled: true # Ensure enabled in production
+
+kafka:
+  replicaCount: 3 # More replicas for production
+
+observability:
+  enabled: true # Ensure enabled in production
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+  loki:
+    enabled: true
+  tempo:
+    enabled: true

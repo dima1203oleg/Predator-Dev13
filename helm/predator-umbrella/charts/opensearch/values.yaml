@@ -1,0 +1,57 @@
+# Default values for opensearch.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Enable the OpenSearch subchart
+opensearch:
+  enabled: true
+  clusterName: opensearch-cluster
+  nodeGroup: "data"
+  master:
+    replicas: 1
+    persistence:
+      enabled: true
+      size: 50Gi
+  data:
+    replicas: 2 # Default size, overridden by umbrella values-prod.yaml
+    persistence:
+      enabled: true
+      size: 200Gi # Default size, overridden by umbrella values-prod.yaml
+  client:
+    replicas: 1
+  # Custom resources for OpenSearch
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  # OpenSearch Dashboards
+  dashboards:
+    enabled: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+  # PII masking pipeline, ILM policy, and index templates
+  # These will be created as Kubernetes ConfigMaps and then applied to OpenSearch
+  config:
+    piiMaskingPipeline: |
+      {{ .Files.Get "../../../api/opensearch/pii_masking_pipeline.json" | nindent 6 }}
+    ilmPolicy: |
+      {{ .Files.Get "../../../api/opensearch/ilm_policy.json" | nindent 6 }}
+    indexTemplate: |
+      {{ .Files.Get "../../../api/opensearch/index_template.json" | nindent 6 }}
+
+# Override global settings if needed
+global:
+  opensearch:
+    auth:
+      # Pass through secretsRef from umbrella chart
+      existingSecret: "predator-secrets"
+      secretKeys:
+        adminPasswordKey: OPENSEARCH_ADMIN_PASSWORD

@@ -1,0 +1,91 @@
+{
+  "policy": {
+    "description": "ILM policy for Predator Analytics indices: hot -> warm -> cold",
+    "default_state": "hot",
+    "states": [
+      {
+        "name": "hot",
+        "actions": [
+          {
+            "rollover": {
+              "min_size": "50gb",
+              "min_index_age": "7d"
+            }
+          }
+        ],
+        "transitions": [
+          {
+            "state_name": "warm",
+            "conditions": {
+              "min_index_age": "14d"
+            }
+          }
+        ]
+      },
+      {
+        "name": "warm",
+        "actions": [
+          {
+            "replica_count": {
+              "number_of_replicas": 1
+            }
+          },
+          {
+            "force_merge": {
+              "max_num_segments": 1
+            }
+          },
+          {
+            "read_only": {}
+          }
+        ],
+        "transitions": [
+          {
+            "state_name": "cold",
+            "conditions": {
+              "min_index_age": "90d"
+            }
+          }
+        ]
+      },
+      {
+        "name": "cold",
+        "actions": [
+          {
+            "replica_count": {
+              "number_of_replicas": 0
+            }
+          },
+          {
+            "snapshot": {
+              "repository": "predator_snapshots",
+              "snapshot": "pa-snapshot-{{ctx.index}}"
+            }
+          }
+        ],
+        "transitions": [
+          {
+            "state_name": "delete",
+            "conditions": {
+              "min_index_age": "2920d"
+            }
+          }
+        ]
+      },
+      {
+        "name": "delete",
+        "actions": [
+          {
+            "delete": {}
+          }
+        ]
+      }
+    ],
+    "ism_template": [
+      {
+        "index_patterns": ["pa-*-v*"],
+        "priority": 100
+      }
+    ]
+  }
+}
