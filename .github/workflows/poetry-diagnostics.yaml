@@ -1,0 +1,43 @@
+name: Poetry Diagnostics
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    name: Poetry diagnose (+artifacts)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Collect diagnostic info
+        run: |
+          set -euo pipefail
+          echo "=== python version ===" > /tmp/poetry_diag.txt
+          python -V >> /tmp/poetry_diag.txt 2>&1 || true
+          echo "\n=== pyproject.toml ===" >> /tmp/poetry_diag.txt
+          sed -n '1,300p' pyproject.toml >> /tmp/poetry_diag.txt || true
+          echo "\n=== pip / poetry version ===" >> /tmp/poetry_diag.txt
+          python -m pip install --upgrade pip >> /tmp/poetry_diag.txt 2>&1 || true
+          pip install poetry >> /tmp/poetry_diag.txt 2>&1 || true
+          poetry --version >> /tmp/poetry_diag.txt 2>&1 || true
+          echo "\n=== poetry debug info ===" >> /tmp/poetry_diag.txt
+          poetry debug info >> /tmp/poetry_diag.txt 2>&1 || true
+          echo "\n=== poetry debug resolve (may fail) ===" >> /tmp/poetry_diag.txt
+          poetry debug resolve -vvv >> /tmp/poetry_resolve.txt 2>&1 || true
+          echo "WROTE /tmp/poetry_diag.txt and /tmp/poetry_resolve.txt"
+
+      - name: Upload diagnostics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poetry-diagnostics
+          path: |
+            /tmp/poetry_diag.txt
+            /tmp/poetry_resolve.txt
+            pyproject.toml
