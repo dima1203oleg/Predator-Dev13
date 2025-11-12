@@ -285,7 +285,9 @@ class AutoHealAgent(BaseAgent):
             overall_status = (
                 "healthy"
                 if unhealthy_count == 0
-                else "degraded" if unhealthy_count < 3 else "critical"
+                else "degraded"
+                if unhealthy_count < 3
+                else "critical"
             )
 
             return {

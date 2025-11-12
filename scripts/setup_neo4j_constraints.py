@@ -34,7 +34,7 @@ def setup_neo4j_constraints():
     constraints = [
         "CREATE CONSTRAINT FOR (c:Company) REQUIRE c.edrpou IS UNIQUE",
         "CREATE CONSTRAINT FOR (p:Product) REQUIRE p.hs_code IS UNIQUE",
-        "CREATE CONSTRAINT FOR (co:Country) REQUIRE co.code IS UNIQUE"
+        "CREATE CONSTRAINT FOR (co:Country) REQUIRE co.code IS UNIQUE",
     ]
 
     try:
@@ -57,6 +57,7 @@ def setup_neo4j_constraints():
         sys.exit(1)
     finally:
         driver.close()
+
 
 if __name__ == "__main__":
     setup_neo4j_constraints()

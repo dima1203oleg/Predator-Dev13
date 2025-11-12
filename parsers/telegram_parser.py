@@ -146,8 +146,7 @@ class TelegramParser:
                 statistics["entity_types"][etype] = statistics["entity_types"].get(etype, 0) + 1
 
             logger.info(
-                f"Parsed {len(messages)} messages, "
-                f"{len(entities)} entities from {channel_username}"
+                f"Parsed {len(messages)} messages, {len(entities)} entities from {channel_username}"
             )
 
             return {

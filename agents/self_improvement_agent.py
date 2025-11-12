@@ -723,9 +723,7 @@ class SelfImprovementAgent(BaseAgent):
             # Get drift history
             recent_drifts = [
                 drift for drift in self.drift_history if drift["model_id"] == model_id
-            ][
-                -5:
-            ]  # Last 5 drift events
+            ][-5:]  # Last 5 drift events
 
             return {
                 "current_metrics": current_metrics,
@@ -956,7 +954,9 @@ class SelfImprovementAgent(BaseAgent):
                         "trend": (
                             "improving"
                             if values[-1] > values[0]
-                            else "degrading" if values[-1] < values[0] else "stable"
+                            else "degrading"
+                            if values[-1] < values[0]
+                            else "stable"
                         ),
                     }
 

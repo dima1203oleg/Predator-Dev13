@@ -1370,9 +1370,9 @@ class RecommendationAgent(BaseAgent):
 
             # Update interaction
             if rating is not None:
-                self.recommendation_state["user_profiles"][user_id]["interactions"][
-                    item_id
-                ] = rating
+                self.recommendation_state["user_profiles"][user_id]["interactions"][item_id] = (
+                    rating
+                )
 
             # Add to feedback loop
             feedback_entry = {

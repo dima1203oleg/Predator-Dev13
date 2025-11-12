@@ -14,8 +14,8 @@ Environment Variables:
 
 import os
 import sys
-from typing import List
 
+# Use built-in generics (PEP 585) where possible
 from neo4j import GraphDatabase
 
 
@@ -79,7 +79,7 @@ class Neo4jConstraintManager:
 
         return stats
 
-    def _get_existing_constraints(self, session) -> List[str]:
+    def _get_existing_constraints(self, session) -> list[str]:
         """Get list of existing constraint names"""
         result = session.run("SHOW CONSTRAINTS")
         return [record["name"] for record in result if "name" in record]
@@ -156,7 +156,7 @@ class Neo4jConstraintManager:
 
         return stats
 
-    def _get_existing_indexes(self, session) -> List[str]:
+    def _get_existing_indexes(self, session) -> list[str]:
         """Get list of existing index names"""
         result = session.run("SHOW INDEXES")
         return [record["name"] for record in result if "name" in record]

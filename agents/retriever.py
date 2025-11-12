@@ -40,7 +40,9 @@ class RetrieverAgent(BaseAgent):
             collection_name=os.getenv("QDRANT_COLLECTION", "pa_customs_v1"),
         )
 
-        self.opensearch_index = os.getenv("OPENSEARCH_INDEX", "customs_records") # Changed default index name
+        self.opensearch_index = os.getenv(
+            "OPENSEARCH_INDEX", "customs_records"
+        )  # Changed default index name
         self.opensearch = OpenSearch(
             hosts=[os.getenv("OPENSEARCH_URL", "http://localhost:9200")],
             http_auth=(

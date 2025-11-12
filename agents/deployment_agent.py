@@ -571,7 +571,9 @@ class DeploymentAgent(BaseAgent):
 
             # Monitor canary performance
             monitoring_result = await self._monitor_canary_performance(
-                canary_app_name, app_name, duration=300  # 5 minutes
+                canary_app_name,
+                app_name,
+                duration=300,  # 5 minutes
             )
 
             if monitoring_result.get("success", False):

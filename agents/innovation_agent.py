@@ -744,7 +744,7 @@ class InnovationAgent(BaseAgent):
         try:
             # Implementation for brainstorming
             return [
-                {"idea": f"Brainstorming idea {i+1}", "domain": domain, "quality_score": 0.7}
+                {"idea": f"Brainstorming idea {i + 1}", "domain": domain, "quality_score": 0.7}
                 for i in range(target_quantity)
             ]
         except Exception as e:

@@ -93,13 +93,13 @@ class ArbiterAgent(BaseAgent):
 {context.query}
 
 ДАНІ (з Retriever):
-- Знайдено записів: {retriever.get('total_count', 0)}
-- Топ-5 компаній: {[r.get('company_name') for r in retriever.get('merged', [])[:5]]}
+- Знайдено записів: {retriever.get("total_count", 0)}
+- Топ-5 компаній: {[r.get("company_name") for r in retriever.get("merged", [])[:5]]}
 
 АНАЛІЗ (з Miner):
-- Аномалій: {len(miner.get('anomalies', []))}
-- Корупційних прапорців: {len(miner.get('corruption_flags', []))}
-- Інсайти: {miner.get('insights', [])}
+- Аномалій: {len(miner.get("anomalies", []))}
+- Корупційних прапорців: {len(miner.get("corruption_flags", []))}
+- Інсайти: {miner.get("insights", [])}
 
 ЗАВДАННЯ:
 1. Дай чітку відповідь на запит користувача

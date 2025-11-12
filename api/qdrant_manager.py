@@ -38,9 +38,7 @@ class QdrantManager:
         self.collection_name = collection_name
 
         # Initialize client
-        self.client = QdrantClient(
-            host=self.host, port=self.port, api_key=self.api_key, timeout=30
-        )
+        self.client = QdrantClient(host=self.host, port=self.port, api_key=self.api_key, timeout=30)
 
         logger.info(
             f"Qdrant client initialized: {self.host}:{self.port}, collection: {self.collection_name}"
@@ -112,9 +110,7 @@ class QdrantManager:
                         payload = point.get("payload", {})
 
                         # Compute op_hash for idempotency
-                        op_hash_input = (
-                            f"{pk}:{','.join(map(str, vector[:10]))}"  # First 10 dims
-                        )
+                        op_hash_input = f"{pk}:{','.join(map(str, vector[:10]))}"  # First 10 dims
                         op_hash = hashlib.sha256(op_hash_input.encode()).hexdigest()
 
                         # Minimal payload: pk, title, tags, meta, op_hash
@@ -148,12 +144,12 @@ class QdrantManager:
                     if result.status == UpdateStatus.COMPLETED:
                         stats["upserted"] += len(qdrant_points)
                         logger.debug(
-                            f"Upserted batch {i//batch_size + 1}: {len(qdrant_points)} points"
+                            f"Upserted batch {i // batch_size + 1}: {len(qdrant_points)} points"
                         )
                     else:
                         stats["failed"] += len(qdrant_points)
                         logger.error(
-                            f"Upsert failed for batch {i//batch_size + 1}: {result.status}"
+                            f"Upsert failed for batch {i // batch_size + 1}: {result.status}"
                         )
 
             logger.info(f"Upsert completed: {stats}")

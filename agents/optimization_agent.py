@@ -32,9 +32,7 @@ class OptimizationAgent(BaseAgent):
     Uses ML models and optimization algorithms to improve system efficiency
     """
 
-    def __init__(
-        self, agent_id: str = "optimization_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "optimization_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Optimization configuration

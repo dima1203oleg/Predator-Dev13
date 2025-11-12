@@ -11,11 +11,12 @@ from api.upload_service import MultiDatabaseUploadService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def main():
     file_path = "/Users/dima/Desktop/Лютий_10.xlsx"
     filename = os.path.basename(file_path)
     dataset_name = f"desktop_upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    owner = "system_user" # Or a more appropriate user if available
+    owner = "system_user"  # Or a more appropriate user if available
 
     upload_service = MultiDatabaseUploadService()
 
@@ -28,18 +29,15 @@ async def main():
     try:
         logger.info(f"Starting upload for file: {file_path}")
         result = await upload_service.process_upload(
-            file_path=file_path,
-            filename=filename,
-            dataset_name=dataset_name,
-            owner=owner,
-            db=db
+            file_path=file_path, filename=filename, dataset_name=dataset_name, owner=owner, db=db
         )
         logger.info("Upload process completed.")
         logger.info(f"Result: {result}")
     except Exception as e:
         logger.error(f"An error occurred during upload: {e}", exc_info=True)
     finally:
-        db.close() # Ensure the session is closed
+        db.close()  # Ensure the session is closed
+
 
 if __name__ == "__main__":
     asyncio.run(main())

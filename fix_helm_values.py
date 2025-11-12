@@ -19,14 +19,16 @@ def load_yaml(file_path):
         print(f"Error loading {file_path}: {e}")
         return None
 
+
 def save_yaml(file_path, data):
     """Save YAML file safely."""
     try:
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
         print(f"Updated {file_path}")
     except Exception as e:
         print(f"Error saving {file_path}: {e}")
+
 
 def add_missing_sections(values_file):
     """Add missing sections to values.yaml file."""
@@ -37,42 +39,40 @@ def add_missing_sections(values_file):
     modified = False
 
     # Add image section if missing
-    if 'image' not in data:
-        data['image'] = {
-            'repository': 'nginx',  # default, will be overridden by specific charts
-            'tag': 'latest',
-            'pullPolicy': 'IfNotPresent'
+    if "image" not in data:
+        data["image"] = {
+            "repository": "nginx",  # default, will be overridden by specific charts
+            "tag": "latest",
+            "pullPolicy": "IfNotPresent",
         }
         modified = True
 
     # Add service section if missing
-    if 'service' not in data:
-        data['service'] = {
-            'type': 'ClusterIP',
-            'port': 80  # default, will be overridden by specific charts
+    if "service" not in data:
+        data["service"] = {
+            "type": "ClusterIP",
+            "port": 80,  # default, will be overridden by specific charts
         }
         modified = True
 
     # Add autoscaling section if missing
-    if 'autoscaling' not in data:
-        data['autoscaling'] = {
-            'enabled': False,
-            'minReplicas': 1,
-            'maxReplicas': 3,
-            'targetCPUUtilizationPercentage': 80
+    if "autoscaling" not in data:
+        data["autoscaling"] = {
+            "enabled": False,
+            "minReplicas": 1,
+            "maxReplicas": 3,
+            "targetCPUUtilizationPercentage": 80,
         }
         modified = True
 
     # Add serviceAccount section if missing
-    if 'serviceAccount' not in data:
-        data['serviceAccount'] = {
-            'create': True,
-            'name': ''
-        }
+    if "serviceAccount" not in data:
+        data["serviceAccount"] = {"create": True, "name": ""}
         modified = True
 
     if modified:
         save_yaml(values_file, data)
+
 
 def main():
     """Main function to process all values.yaml files."""
@@ -82,7 +82,7 @@ def main():
     print(f"Found {len(values_files)} values.yaml files")
 
     # Skip charts that already have these sections (redis, postgres, opensearch)
-    skip_charts = ['redis', 'postgres', 'opensearch']
+    skip_charts = ["redis", "postgres", "opensearch"]
 
     for values_file in values_files:
         chart_name = os.path.basename(os.path.dirname(values_file))
@@ -91,6 +91,7 @@ def main():
             add_missing_sections(values_file)
 
     print("Done processing all charts")
+
 
 if __name__ == "__main__":
     main()

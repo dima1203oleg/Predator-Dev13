@@ -39,12 +39,19 @@ class ContentRelevanceAgent(BaseAgent):
     """
 
     def __init__(
-        self, name: str = "content_relevance_agent", model_registry_path: str = "agents/model_registry.yaml", max_retries: int = 3, timeout: int = 60, enable_metrics: bool = True
+        self,
+        name: str = "content_relevance_agent",
+        model_registry_path: str = "agents/model_registry.yaml",
+        max_retries: int = 3,
+        timeout: int = 60,
+        enable_metrics: bool = True,
     ):
         super().__init__(name, model_registry_path, max_retries, timeout, enable_metrics)
 
         # Embedding model for semantic similarity
-        self.embedding_model_name = self.model_config.get("embed", "all-MiniLM-L6-v2") # Use model_config
+        self.embedding_model_name = self.model_config.get(
+            "embed", "all-MiniLM-L6-v2"
+        )  # Use model_config
         self.embedding_model = None
 
         # TF-IDF vectorizer for lexical similarity
@@ -88,9 +95,9 @@ class ContentRelevanceAgent(BaseAgent):
         The context metadata should specify the type of analysis.
         """
         if self.embedding_model is None:
-            await self.initialize() # Ensure model is loaded before execution
+            await self.initialize()  # Ensure model is loaded before execution
 
-        message_type = context.metadata.get("type", "score_relevance") # Default to score relevance
+        message_type = context.metadata.get("type", "score_relevance")  # Default to score relevance
 
         if message_type == "score_relevance":
             return await self._perform_relevance_scoring(context)
@@ -105,9 +112,7 @@ class ContentRelevanceAgent(BaseAgent):
         else:
             raise ValueError(f"Unknown analysis type: {message_type}")
 
-    async def _perform_relevance_scoring(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_relevance_scoring(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform relevance scoring request
         """
@@ -493,9 +498,7 @@ class ContentRelevanceAgent(BaseAgent):
         except Exception:
             return 0.5
 
-    async def _perform_document_ranking(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_document_ranking(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform document ranking request
         """
@@ -561,9 +564,7 @@ class ContentRelevanceAgent(BaseAgent):
             logger.error(f"Document ranking failed: {e}")
             return []
 
-    async def _perform_relevance_filtering(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_relevance_filtering(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform relevance filtering request
         """
@@ -627,9 +628,7 @@ class ContentRelevanceAgent(BaseAgent):
             logger.error(f"Document filtering failed: {e}")
             return []
 
-    async def _perform_search_evaluation(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_search_evaluation(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform search evaluation request
         """
@@ -802,9 +801,7 @@ class ContentRelevanceAgent(BaseAgent):
             logger.error(f"NDCG calculation failed: {e}")
             return 0.0
 
-    async def _perform_retrieval_optimization(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_retrieval_optimization(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform retrieval optimization request
         """
@@ -934,9 +931,15 @@ if __name__ == "__main__":
                 "type": "rank_documents",
                 "query": "corruption in customs declarations",
                 "documents": [
-                    {"id": "doc1", "content": "Company X involved in tax evasion through customs fraud."},
+                    {
+                        "id": "doc1",
+                        "content": "Company X involved in tax evasion through customs fraud.",
+                    },
                     {"id": "doc2", "content": "New regulations for import duties in 2023."},
-                    {"id": "doc3", "content": "Officials investigated for bribery in customs office."},
+                    {
+                        "id": "doc3",
+                        "content": "Officials investigated for bribery in customs office.",
+                    },
                 ],
                 "top_k": 2,
             },

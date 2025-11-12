@@ -185,9 +185,7 @@ class CorruptionDetectorAgent(BaseAgent):
             alerts = await self._generate_corruption_alerts(detection_results)
 
             # Save alerts to database
-            await self._save_corruption_alerts(
-                alerts, message.content.get("user_id")
-            )
+            await self._save_corruption_alerts(alerts, message.content.get("user_id"))
 
             yield AgentMessage(
                 id=str(uuid.uuid4()),
@@ -593,7 +591,9 @@ class CorruptionDetectorAgent(BaseAgent):
 
             # Train isolation forest
             model = IsolationForest(
-                n_estimators=100, contamination=0.1, random_state=42  # Expected 10% anomalies
+                n_estimators=100,
+                contamination=0.1,
+                random_state=42,  # Expected 10% anomalies
             )
 
             model.fit(X_scaled)

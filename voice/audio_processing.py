@@ -35,9 +35,7 @@ class AudioProcessor:
 
         logger.info("Audio processor initialized")
 
-    def preprocess_audio(
-        self, audio_path: str, output_path: str | None = None
-    ) -> dict[str, Any]:
+    def preprocess_audio(self, audio_path: str, output_path: str | None = None) -> dict[str, Any]:
         """
         Preprocess audio file
 

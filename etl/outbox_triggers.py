@@ -2,7 +2,6 @@
 PostgreSQL Outbox Pattern Implementation
 """
 
-
 # Outbox table schema
 OUTBOX_SCHEMA = """
 CREATE TABLE IF NOT EXISTS public.outbox (

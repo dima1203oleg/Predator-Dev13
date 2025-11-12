@@ -4,6 +4,7 @@
 Usage: python scripts/update_helm_values.py --file charts/app/values.yaml --image-tag <tag>
 This script edits the YAML in-place and commits the change (when run in CI with git configured).
 """
+
 import argparse
 import sys
 from pathlib import Path

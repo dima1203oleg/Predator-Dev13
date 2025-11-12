@@ -73,7 +73,7 @@ class ExcelParser:
         elif file_ext in [".xlsx", ".xls"]:
             # Read entire Excel file at once as chunksize is not supported for Excel in this pandas version
             df = pd.read_excel(file_path)
-            df_iterator = [df] # Wrap in a list to simulate iteration
+            df_iterator = [df]  # Wrap in a list to simulate iteration
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 

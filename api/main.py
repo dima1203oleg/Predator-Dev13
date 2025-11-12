@@ -206,8 +206,12 @@ async def core_middleware(request: Request, call_next):
 
     try:
         response = await call_next(request)
-        REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status=response.status_code).inc()
-        REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe((datetime.now() - start_time).total_seconds())
+        REQUEST_COUNT.labels(
+            method=request.method, endpoint=request.url.path, status=response.status_code
+        ).inc()
+        REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(
+            (datetime.now() - start_time).total_seconds()
+        )
         return response
     finally:
         ACTIVE_CONNECTIONS.dec()
@@ -250,14 +254,14 @@ async def upload_customs_data(
 ):
     """
     Upload customs data file and automatically index across all databases
-    
+
     Databases indexed:
     - PostgreSQL: structured data storage with deduplication
     - OpenSearch: full-text search (company names, HS codes, offices)
     - Qdrant: vector similarity search (embeddings)
     - Neo4j: graph relationships (companies, products, countries)
     - Redis: statistics caching (HS codes, companies, countries)
-    
+
     Returns:
         UploadResponse with processing statistics
     """
@@ -273,8 +277,8 @@ async def upload_customs_data(
 
         # Auto-generate dataset name if not provided
         if not dataset_name:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            base_name = file.filename.rsplit('.', 1)[0]
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            base_name = file.filename.rsplit(".", 1)[0]
             dataset_name = f"customs_{timestamp}_{base_name}"
 
         # Save temp file
@@ -292,7 +296,7 @@ async def upload_customs_data(
             filename=file.filename,
             dataset_name=dataset_name,
             owner=user.username,
-            db=db
+            db=db,
         )
 
         # Cleanup temp file
@@ -335,10 +339,7 @@ async def upload_customs_data(
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
-        raise HTTPException(
-            status_code=500,
-            detail=f"Upload failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @app.post("/api/v1/customs/search")

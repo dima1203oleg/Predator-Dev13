@@ -59,9 +59,7 @@ class AnomalyDetectionAgent(BaseAgent):
             "threshold_sensitivity": self.config.get("threshold_sensitivity", 0.95),
             "alert_cooldown": self.config.get("alert_cooldown", 300),
             "retraining_interval": self.config.get("retraining_interval", 3600),
-            "feature_importance_threshold": self.config.get(
-                "feature_importance_threshold", 0.7
-            ),
+            "feature_importance_threshold": self.config.get("feature_importance_threshold", 0.7),
         }
 
         # Detection models
@@ -69,12 +67,8 @@ class AnomalyDetectionAgent(BaseAgent):
         self.scalers = {}
 
         # Data buffers for sliding windows
-        self.data_buffers = defaultdict(
-            lambda: deque(maxlen=self.anomaly_config["window_size"])
-        )
-        self.feature_buffers = defaultdict(
-            lambda: deque(maxlen=self.anomaly_config["window_size"])
-        )
+        self.data_buffers = defaultdict(lambda: deque(maxlen=self.anomaly_config["window_size"]))
+        self.feature_buffers = defaultdict(lambda: deque(maxlen=self.anomaly_config["window_size"]))
 
         # Anomaly tracking
         self.anomaly_history = defaultdict(list)
@@ -167,10 +161,7 @@ class AnomalyDetectionAgent(BaseAgent):
                     id=str(uuid.uuid4()),
                     from_agent=self.agent_id,
                     to_agent=message.from_agent,
-                    content={
-                        "type": "error",
-                        "error": f"Unknown message type: {message_type}"
-                    },
+                    content={"type": "error", "error": f"Unknown message type: {message_type}"},
                     timestamp=datetime.now(),
                 )
 
@@ -198,16 +189,12 @@ class AnomalyDetectionAgent(BaseAgent):
 
             # One-Class SVM
             self.models["one_class_svm"] = OneClassSVM(
-                kernel="rbf",
-                nu=self.anomaly_config["contamination"],
-                gamma="scale"
+                kernel="rbf", nu=self.anomaly_config["contamination"], gamma="scale"
             )
 
             # Local Outlier Factor
             self.models["local_outlier_factor"] = LocalOutlierFactor(
-                n_neighbors=20,
-                contamination=self.anomaly_config["contamination"],
-                novelty=True
+                n_neighbors=20, contamination=self.anomaly_config["contamination"], novelty=True
             )
 
             # Initialize scalers
@@ -253,9 +240,7 @@ class AnomalyDetectionAgent(BaseAgent):
                     return decoded
 
             # Placeholder input dimension (will be set when data arrives)
-            self.autoencoder_model = Autoencoder(
-                input_dim=10
-            )  # Default, will be updated
+            self.autoencoder_model = Autoencoder(input_dim=10)  # Default, will be updated
 
         except Exception as e:
             logger.error(f"Autoencoder initialization failed: {e}")
@@ -341,9 +326,7 @@ class AnomalyDetectionAgent(BaseAgent):
             # Check if anomaly threshold is exceeded
             if ensemble_score > self.anomaly_config["threshold_sensitivity"]:
                 # Use internal handler for automatic anomaly processing
-                await self._process_detected_anomaly(
-                    stream_id, ensemble_score, anomaly_results
-                )
+                await self._process_detected_anomaly(stream_id, ensemble_score, anomaly_results)
 
         except Exception as e:
             logger.error(f"Stream monitoring failed for {stream_id}: {e}")
@@ -453,9 +436,7 @@ class AnomalyDetectionAgent(BaseAgent):
                     continue
 
                 # Detect peaks (potential anomalies)
-                peaks, _ = find_peaks(
-                    feature_values, distance=5, prominence=np.std(feature_values)
-                )
+                peaks, _ = find_peaks(feature_values, distance=5, prominence=np.std(feature_values))
 
                 # Detect valleys
                 valleys, _ = find_peaks(
@@ -581,9 +562,7 @@ class AnomalyDetectionAgent(BaseAgent):
                 "ensemble_score": ensemble_score,
                 "method_results": anomaly_results,
                 "severity": (
-                    "high" if ensemble_score > 0.8
-                    else "medium" if ensemble_score > 0.6
-                    else "low"
+                    "high" if ensemble_score > 0.8 else "medium" if ensemble_score > 0.6 else "low"
                 ),
             }
 
@@ -751,10 +730,7 @@ class AnomalyDetectionAgent(BaseAgent):
                         id=str(uuid.uuid4()),
                         from_agent=self.agent_id,
                         to_agent=message.from_agent,
-                        content={
-                            "type": "error",
-                            "error": f"Missing required field: {field}"
-                        },
+                        content={"type": "error", "error": f"Missing required field: {field}"},
                         timestamp=datetime.now(),
                     )
                     return
@@ -841,9 +817,7 @@ class AnomalyDetectionAgent(BaseAgent):
 
             for method in self.anomaly_config["detection_methods"]:
                 try:
-                    scores = await self._detect_anomalies_method(
-                        feature_matrix, method, stream_id
-                    )
+                    scores = await self._detect_anomalies_method(feature_matrix, method, stream_id)
                     anomaly_results[method] = scores
                 except Exception as e:
                     logger.error(f"Manual detection failed for method {method}: {e}")
@@ -1091,8 +1065,7 @@ class AnomalyDetectionAgent(BaseAgent):
                         "type": "data_point_processed",
                         "stream_id": stream_id,
                         "anomaly_score": ensemble_score,
-                        "is_anomaly": ensemble_score
-                        > self.anomaly_config["threshold_sensitivity"],
+                        "is_anomaly": ensemble_score > self.anomaly_config["threshold_sensitivity"],
                     },
                     timestamp=datetime.now(),
                 )
@@ -1182,11 +1155,7 @@ if __name__ == "__main__":
             id="test_history",
             from_agent="test",
             to_agent="anomaly_detection_agent",
-            content={
-                "type": "get_anomaly_history",
-                "stream_id": "test_stream_123",
-                "limit": 10
-            },
+            content={"type": "get_anomaly_history", "stream_id": "test_stream_123", "limit": 10},
             timestamp=datetime.now(),
         )
 

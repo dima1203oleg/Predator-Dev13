@@ -361,7 +361,9 @@ class SpeechRecognitionAgent(BaseAgent):
 
                 # Transcribe
                 result = whisper_model.transcribe(
-                    audio_array, language=language, fp16=False  # Disable FP16 for CPU
+                    audio_array,
+                    language=language,
+                    fp16=False,  # Disable FP16 for CPU
                 )
 
                 transcription_result = {
