@@ -28,9 +28,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          # Use Python matching project's pyproject (>=3.14). Runner image may not yet
-          # have python 3.14 as 'ubuntu-latest' default, but setup-python will install it.
-          python-version: '3.14'
+          # Use Python matching project's pyproject (currently ^3.11).
+          # Keep CI runner Python at 3.11 so third-party packages with
+          # upper-bound constraints (eg. pyautogen <3.13) can be installed.
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
