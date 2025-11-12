@@ -40,7 +40,6 @@ langchain-community = "^0.0.38"
 langchain-openai = "^0.0.2"
 langgraph = "^0.0.26"
 crewai = {extras = ["tools"], version = "^0.1.27"}
-pyautogen = "^0.2.16"
 mlflow = "^2.10.2"
 transformers = "^4.37.2"
 torch = "^2.2.0"
@@ -90,6 +89,7 @@ black = "^24.1.1"
 ruff = "^0.2.1"
 mypy = "^1.8.0"
 pre-commit = "^3.6.0"
+pyautogen = "^0.2.16"
 
 [tool.black]
 line-length = 100
