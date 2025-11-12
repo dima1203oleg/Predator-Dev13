@@ -2,18 +2,20 @@
 Alembic Environment Configuration
 Predator Analytics v13
 """
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
-import sys
+
 import os
+import sys
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+# Import models for auto-generation
+from api.database import DATABASE_URL, Base
+from api.models import *  # noqa
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-# Import models for auto-generation
-from api.database import Base, DATABASE_URL
-from api.models import *  # noqa
 
 # Alembic Config object
 config = context.config
@@ -52,10 +54,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

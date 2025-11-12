@@ -1,241 +1,58 @@
 apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosExperiment
+metadata:
+  name: pod-delete-experiment
+  namespace: litmus
+spec:
+  definition:
+    scope: cluster
+    target:
+      kind: pod
+      labelSelector:
+        # Generic label selector, adjust as needed for your application components
+        # Example: app.kubernetes.io/component: api
+        # Or target specific applications deployed by ArgoCD
+        # app.kubernetes.io/instance: <your-argocd-app-name>
+        # For now, we'll keep it broad for demonstration
+        app.kubernetes.io/part-of: predator-analytics
+    steps:
+      - name: pod-delete
+        probe:
+          - name: check-app-health
+            type: http
+            http:
+              url: "http://predator-umbrella-api.default.svc.cluster.local:8080/health" # Placeholder URL, replace 'default' with actual namespace if needed
+              method: GET
+              status: 200
+            interval: 5s
+            timeout: 10s
+        action: delete
+        duration: 30s
+        criteria:
+          - type: count
+            value: 1
+          - type: label
+            key: app.kubernetes.io/component
+            value: api # Target API pods for this example
+---
+apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: predator-chaos-suite
-  namespace: predator
+  name: predator-api-pod-delete
+  namespace: litmus
 spec:
-  appinfo:
-    appns: predator
-    applabel: "app.kubernetes.io/part-of=predator"
-    appkind: deployment
-  
+  engineState: "active" # "active" or "stop"
   chaosServiceAccount: litmus-admin
-  
   experiments:
-    # 1. Pod Delete - Test AutoHeal restart
-    - name: pod-delete
+    - name: pod-delete-experiment
       spec:
         components:
+          experimentImage: litmuschaos/go-runner
+          experimentImageTag: latest
           env:
             - name: TOTAL_CHAOS_DURATION
-              value: "60"
+              value: "30" # in seconds
             - name: CHAOS_INTERVAL
-              value: "10"
+              value: "10" # in seconds
             - name: FORCE
-              value: "false"
-            - name: TARGET_PODS
-              value: "predator-api"
-        probe:
-          - name: check-api-health
-            type: httpProbe
-            httpProbe/inputs:
-              url: http://predator-api:8080/health
-              insecureSkipVerify: false
-              method:
-                get:
-                  criteria: ==
-                  responseCode: "200"
-            mode: Continuous
-            runProperties:
-              probeTimeout: 5
-              interval: 2
-              retry: 3
-
-    # 2. Network Latency - Test timeout handling
-    - name: pod-network-latency
-      spec:
-        components:
-          env:
-            - name: NETWORK_INTERFACE
-              value: "eth0"
-            - name: NETWORK_LATENCY
-              value: "2000"
-            - name: TOTAL_CHAOS_DURATION
-              value: "120"
-            - name: TARGET_PODS
-              value: "predator-api"
-            - name: PODS_AFFECTED_PERC
-              value: "50"
-        probe:
-          - name: check-api-latency
-            type: promProbe
-            promProbe/inputs:
-              endpoint: http://prometheus:9090
-              query: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[1m]))"
-              comparator:
-                criteria: "<="
-                value: "5"
-            mode: Edge
-            runProperties:
-              probeTimeout: 5
-              interval: 5
-              retry: 2
-
-    # 3. Pod Memory Hog - Test OOM handling
-    - name: pod-memory-hog
-      spec:
-        components:
-          env:
-            - name: MEMORY_CONSUMPTION
-              value: "500"
-            - name: TOTAL_CHAOS_DURATION
-              value: "60"
-            - name: TARGET_PODS
-              value: "predator-agents"
-        probe:
-          - name: check-pod-restart
-            type: cmdProbe
-            cmdProbe/inputs:
-              command: kubectl get pods -n predator -l app=predator-agents -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}'
-              comparator:
-                criteria: "<="
-                value: "3"
-            mode: Edge
-            runProperties:
-              probeTimeout: 10
-              interval: 5
-              retry: 2
-
-    # 4. Pod CPU Hog - Test HPA scaling
-    - name: pod-cpu-hog
-      spec:
-        components:
-          env:
-            - name: CPU_CORES
-              value: "1"
-            - name: TOTAL_CHAOS_DURATION
-              value: "120"
-            - name: TARGET_PODS
-              value: "predator-celery"
-        probe:
-          - name: check-hpa-scaling
-            type: k8sProbe
-            k8sProbe/inputs:
-              group: autoscaling
-              version: v2
-              resource: horizontalpodautoscalers
-              namespace: predator
-              fieldSelector: metadata.name=predator-celery-hpa
-              operation: present
-            mode: Continuous
-            runProperties:
-              probeTimeout: 10
-              interval: 10
-
-    # 5. PostgreSQL Pod Delete - Test CDC replay
-    - name: pod-delete-postgres
-      spec:
-        components:
-          env:
-            - name: TOTAL_CHAOS_DURATION
-              value: "30"
-            - name: FORCE
-              value: "false"
-            - name: TARGET_PODS
-              value: "postgres-0"
-        probe:
-          - name: check-cdc-lag
-            type: promProbe
-            promProbe/inputs:
-              endpoint: http://prometheus:9090
-              query: "cdc_vector_lag"
-              comparator:
-                criteria: "<="
-                value: "100"
-            mode: Edge
-            runProperties:
-              probeTimeout: 60
-              interval: 10
-              retry: 5
-
-    # 6. Redis Pod Delete - Test cache miss handling
-    - name: pod-delete-redis
-      spec:
-        components:
-          env:
-            - name: TOTAL_CHAOS_DURATION
-              value: "30"
-            - name: TARGET_PODS
-              value: "redis-master-0"
-        probe:
-          - name: check-cache-hit-rate
-            type: promProbe
-            promProbe/inputs:
-              endpoint: http://prometheus:9090
-              query: "rate(redis_keyspace_hits_total[1m]) / (rate(redis_keyspace_hits_total[1m]) + rate(redis_keyspace_misses_total[1m]))"
-              comparator:
-                criteria: ">="
-                value: "0.5"
-            mode: Continuous
-            runProperties:
-              probeTimeout: 5
-              interval: 5
-
-    # 7. Disk Fill - Test storage monitoring
-    - name: disk-fill
-      spec:
-        components:
-          env:
-            - name: FILL_PERCENTAGE
-              value: "80"
-            - name: TOTAL_CHAOS_DURATION
-              value: "60"
-            - name: TARGET_PODS
-              value: "opensearch-data-0"
-        probe:
-          - name: check-disk-alert
-            type: promProbe
-            promProbe/inputs:
-              endpoint: http://prometheus:9090
-              query: "ALERTS{alertname='DiskSpaceLow',alertstate='firing'}"
-              comparator:
-                criteria: "=="
-                value: "1"
-            mode: Edge
-            runProperties:
-              probeTimeout: 30
-              interval: 10
-
-  engineState: active
-  
-  # Schedule chaos for regular testing
-  jobCleanUpPolicy: delete
-  
-  # Annotate results
-  annotationCheck: "true"
-
----
-# Weekly chaos schedule
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: predator-chaos-weekly
-  namespace: predator
-spec:
-  schedule: "0 2 * * 0"  # Every Sunday at 2 AM
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          serviceAccountName: litmus-admin
-          containers:
-            - name: chaos-trigger
-              image: litmuschaos/chaos-runner:latest
-              command: ["/bin/sh", "-c"]
-              args:
-                - |
-                  kubectl apply -f - <<EOF
-                  apiVersion: litmuschaos.io/v1alpha1
-                  kind: ChaosEngine
-                  metadata:
-                    name: predator-chaos-$(date +%s)
-                    namespace: predator
-                  spec:
-                    engineState: active
-                    chaosServiceAccount: litmus-admin
-                    experiments:
-                      - name: pod-delete
-                      - name: pod-network-latency
-                      - name: pod-memory-hog
-                  EOF
-          restartPolicy: OnFailure
+              value: "true"

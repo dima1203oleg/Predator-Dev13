@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "postgres.fullname" . }}-backup
+  labels:
+    {{- include "postgres.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "postgres.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pgbackrest-backup
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["pgbackrest"]
+              args: ["--stanza=db", "backup"]
+              env:
+                - name: PGBACKREST_REPO1_S3_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.globalSecretsRef.name }}
+                      key: minioAccessKey
+                - name: PGBACKREST_REPO1_S3_KEY_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.globalSecretsRef.name }}
+                      key: minioSecretKey
+                - name: PGBACKREST_REPO1_S3_ENDPOINT
+                  value: "minio.{{ .Release.Namespace }}.svc.cluster.local:9000" # Adjust if MinIO is in a different namespace
+                - name: PGBACKREST_REPO1_S3_REGION
+                  value: "us-east-1" # Or your MinIO region
+                - name: PGBACKREST_REPO1_S3_BUCKET
+                  value: "pgbackups"
+              volumeMounts:
+                - name: postgres-data
+                  mountPath: /var/lib/postgresql/data
+                - name: pgbackrest-config
+                  mountPath: /etc/pgbackrest
+          volumes:
+            - name: postgres-data
+              persistentVolumeClaim:
+                claimName: {{ include "postgres.fullname" . }}-data
+            - name: pgbackrest-config
+              configMap:
+                name: {{ include "postgres.fullname" . }}-pgbackrest-config

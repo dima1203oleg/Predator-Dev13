@@ -47,6 +47,29 @@ opensearch:
     indexTemplate: |
       {{ .Files.Get "../../../api/opensearch/index_template.json" | nindent 6 }}
 
+# Image configuration
+image:
+  repository: opensearchproject/opensearch
+  tag: "2.11.1"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9200
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  name: ""
+
 # Override global settings if needed
 global:
   opensearch:

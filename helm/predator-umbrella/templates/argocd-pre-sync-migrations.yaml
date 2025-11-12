@@ -1,0 +1,65 @@
+{{- if .Values.api.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: predator-pre-sync-migrations
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # ArgoCD hook: run before sync to ensure DB schema and constraints
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: predator-pre-sync-migrations
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrations
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              echo "Running alembic migrations..."
+              # Alembic ini is present at /app/api/alembic.ini
+              alembic -c /app/api/alembic.ini upgrade head
+              echo "Applying Neo4j constraints..."
+              python /app/api/scripts/apply_neo4j_constraints.py
+          env:
+{{- if .Values.global.secretsRef.name }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretsRef.name }}
+                  key: database_url
+            - name: NEO4J_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretsRef.name }}
+                  key: neo4j_uri
+            - name: NEO4J_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretsRef.name }}
+                  key: neo4j_user
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretsRef.name }}
+                  key: neo4j_password
+{{- end }}
+            - name: DATABASE_URL
+              value: {{ default "" .Values.global.env.DATABASE_URL | quote }}
+            - name: NEO4J_URI
+              value: {{ default "" .Values.global.env.NEO4J_URI | quote }}
+            - name: NEO4J_USER
+              value: {{ default "" .Values.global.env.NEO4J_USER | quote }}
+            - name: NEO4J_PASSWORD
+              value: {{ default "" .Values.global.env.NEO4J_PASSWORD | quote }}
+      # Service account with minimal privileges can be specified; default used here
+{{- end }}

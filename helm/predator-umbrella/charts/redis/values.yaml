@@ -22,3 +22,26 @@ redis:
     requests:
       cpu: 100m
       memory: 256Mi
+
+# Image configuration
+image:
+  repository: bitnami/redis
+  tag: "7.2"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 6379
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  name: ""

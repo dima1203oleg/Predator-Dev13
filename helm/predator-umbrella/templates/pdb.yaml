@@ -4,10 +4,12 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ include "predator-umbrella.fullname" . }}
   labels:
-    {{- include "predator-umbrella.labels" . | nindent 4 }}
+    app.kubernetes.io/name: predator-umbrella
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   minAvailable: {{ .Values.pdb.minAvailable }}
   selector:
     matchLabels:
-      {{- include "predator-umbrella.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: predator-umbrella
+      app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}

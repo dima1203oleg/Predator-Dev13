@@ -23,10 +23,11 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml poetry.lock* ./
+COPY pyproject.toml ./
 
 # Install dependencies (without dev dependencies)
-RUN poetry install --only main --no-root && rm -rf $POETRY_CACHE_DIR
+# Note: Without poetry.lock, this will resolve to latest compatible versions
+RUN poetry install --only main --no-root --no-interaction && rm -rf $POETRY_CACHE_DIR
 
 # Runtime stage
 FROM python:3.11-slim-bookworm AS runtime

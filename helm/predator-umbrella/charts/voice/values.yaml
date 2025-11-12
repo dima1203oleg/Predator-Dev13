@@ -41,11 +41,12 @@ service:
 
 resources:
   limits:
-    cpu: 2000m # Defined Voice resource limits
-    memory: 2048Mi # Defined Voice resource limits
+    cpu: 3000m # Adjusted for better performance, fine-tune based on load testing
+    memory: 4096Mi # Adjusted for better performance, fine-tune based on load testing
+    # nvidia.com/gpu: 1 # Uncomment and adjust if GPU is available and required for Whisper
   requests:
-    cpu: 1000m # Defined Voice resource limits
-    memory: 1024Mi # Defined Voice resource limits
+    cpu: 1500m # Adjusted for better performance, fine-tune based on load testing
+    memory: 2048Mi # Adjusted for better performance, fine-tune based on load testing
 
 autoscaling:
   enabled: false

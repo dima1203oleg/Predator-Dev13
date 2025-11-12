@@ -8,6 +8,13 @@ global:
   secretsRef:
     # Reference to a Kubernetes Secret containing global secrets
     name: predator-global-secrets
+    vaultPath: "predator/data" # Base path in Vault for secrets
+  secrets:
+    # Global secrets that will be created
+    apiKey: "change-me-in-production"
+    jwtSecret: "change-me-in-production"
+    databasePassword: "change-me-in-production"
+    redisPassword: "change-me-in-production"
 
 # Default values for subcharts
 api:
@@ -184,3 +191,39 @@ observability:
   #   enabled: true
   # tempo:
   #   enabled: true
+
+# Pod Disruption Budget configuration
+pdb:
+  enabled: true
+  minAvailable: 1
+  # maxUnavailable: 1  # Alternative to minAvailable
+
+# Network Policy configuration
+networkPolicy:
+  enabled: false
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: predator.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+consistencyChecker:
+  enabled: true
+  schedule: "0 0 * * *" # Daily at midnight
+  image:
+    repository: busybox # Or a custom image with consistency check script
+    tag: latest
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi

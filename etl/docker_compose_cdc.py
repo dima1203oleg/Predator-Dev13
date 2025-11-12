@@ -1,7 +1,7 @@
 """
 Docker Compose for CDC Pipeline
 """
-import os
+
 
 # Docker Compose configuration for CDC components
 DOCKER_COMPOSE_CDC = """
@@ -242,17 +242,21 @@ volumes:
   grafana_data:
 """
 
+
 def get_docker_compose_cdc() -> str:
     """Get CDC Docker Compose configuration"""
     return DOCKER_COMPOSE_CDC
+
 
 def get_cdc_env_vars() -> str:
     """Get environment variables for CDC"""
     return CDC_ENV_VARS
 
+
 def get_docker_compose_prod() -> str:
     """Get production Docker Compose override"""
     return DOCKER_COMPOSE_PROD
+
 
 def get_monitoring_stack() -> str:
     """Get monitoring stack configuration"""
