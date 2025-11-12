@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ollama.fullname" . }}-warmup
+  labels:
+    app.kubernetes.io/name: {{ include "ollama.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: warmup
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          {{- range .Values.models }}
+          echo "Pulling model {{ . }}"
+          curl -X POST http://{{ include "ollama.fullname" $ }}:11434/api/pull -d '{"name":"{{ . }}"}'
+          {{- end }}
+          echo "Warmup complete"

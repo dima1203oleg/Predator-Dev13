@@ -14,8 +14,9 @@ Environment Variables:
 
 import os
 import sys
-from neo4j import GraphDatabase
 from typing import List
+
+from neo4j import GraphDatabase
 
 
 class Neo4jConstraintManager:
@@ -193,11 +194,11 @@ def main():
         print("\n" + "=" * 60)
         print("SUMMARY")
         print("=" * 60)
-        print(f"Constraints:")
+        print("Constraints:")
         print(f"  ✓ Created: {constraint_stats['created']}")
         print(f"  ⏭  Existing: {constraint_stats['existing']}")
         print(f"  ❌ Failed: {constraint_stats['failed']}")
-        print(f"\nIndexes:")
+        print("\nIndexes:")
         print(f"  ✓ Created: {index_stats['created']}")
         print(f"  ⏭  Existing: {index_stats['existing']}")
         print(f"  ❌ Failed: {index_stats['failed']}")

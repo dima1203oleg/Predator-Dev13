@@ -1040,7 +1040,7 @@ class SpeechRecognitionAgent(BaseAgent):
                             wav_file.readframes(wav_file.getnframes()), dtype=np.int16
                         )
                         audio_array = audio_array.astype(np.float32) / 32768.0
-                except:
+                except Exception:
                     # Try loading with librosa (supports more formats)
                     audio_buffer = io.BytesIO(audio_bytes)
                     audio_array, sample_rate = librosa.load(audio_buffer, sr=None)

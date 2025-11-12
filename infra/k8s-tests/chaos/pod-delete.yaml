@@ -1,0 +1,22 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: api-pod-delete
+  namespace: predator-dev
+spec:
+  appinfo:
+    appns: predator-dev
+    applabel: "app=api"
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "30"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            - name: FORCE
+              value: "false"

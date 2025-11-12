@@ -17,7 +17,9 @@ Environment variables:
 
 import os
 import sys
+
 from neo4j import GraphDatabase
+
 
 def setup_neo4j_constraints():
     """Create unique constraints for graph nodes"""

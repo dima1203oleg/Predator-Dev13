@@ -1,0 +1,51 @@
+name: SBOM & Image Signing
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    sbom:
+        name: Generate SBOMs and optionally sign image
+        runs-on: ubuntu-latest
+        env:
+            IMAGE: ${{ inputs.image || env.IMAGE || '' }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Generate SBOM for repository (syft)
+              run: |
+                  docker run --rm -v "$PWD":/src -w /src anchore/syft:latest dir:. -o json > sbom-repo.json || true
+            - name: Upload SBOM (repo)
+              uses: actions/upload-artifact@v4
+              with:
+                  name: sbom-repo
+                  path: sbom-repo.json
+
+            - name: Generate SBOM for image (if IMAGE set)
+              if: env.IMAGE != ''
+              run: |
+                  echo "Pulling image: $IMAGE"
+                  docker pull "$IMAGE"
+                  docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD":/output anchore/syft:latest docker:$IMAGE -o json > sbom-image.json || true
+
+            - name: Upload SBOM (image)
+              if: env.IMAGE != ''
+              uses: actions/upload-artifact@v4
+              with:
+                  name: sbom-image
+                  path: sbom-image.json
+
+            - name: Conditionally sign image with Cosign
+              if: env.IMAGE != '' && secrets.COSIGN_PRIVATE_KEY != ''
+              run: |
+                  echo "Signing image with Cosign (private key from SECRET)."
+                  # Write key to a temporary file and remove it after signing; do NOT upload the key.
+                  echo "$COSIGN_PRIVATE_KEY" > cosign.key
+                  chmod 600 cosign.key
+                  docker run --rm -e COSIGN_PASSWORD="$COSIGN_PASSWORD" -v "$PWD":/work -w /work sigstore/cosign:latest sign --key cosign.key "$IMAGE"
+                  shred -u cosign.key || rm -f cosign.key
+              env:
+                  COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+                  COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}

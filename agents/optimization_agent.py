@@ -1363,7 +1363,7 @@ class PerformanceMonitor:
                     metrics["gpu_percent"] = gpu.load * 100
                     metrics["gpu_memory_percent"] = gpu.memoryUtil * 100
                     metrics["gpu_temperature"] = gpu.temperature
-            except:
+            except Exception:
                 metrics["gpu_percent"] = 0
                 metrics["gpu_memory_percent"] = 0
 
@@ -1411,7 +1411,7 @@ class ResourceMonitor:
                     usage["gpu"] = gpus[0].load * 100
                 else:
                     usage["gpu"] = 0
-            except:
+            except Exception:
                 usage["gpu"] = 0
 
             # Store in history

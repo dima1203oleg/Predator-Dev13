@@ -5,8 +5,6 @@ Uses graph algorithms to detect lobbying networks and influence patterns
 
 import asyncio
 import logging
-import uuid
-from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 

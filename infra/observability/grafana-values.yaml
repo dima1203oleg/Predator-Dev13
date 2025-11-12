@@ -1,0 +1,12 @@
+# Grafana Helm values for Predator Analytics
+defaultDashboardsEnabled: true
+adminPassword: "admin"
+persistence:
+  enabled: false
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi

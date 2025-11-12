@@ -1,0 +1,51 @@
+name: Rollout gating & auto-promotion
+
+on:
+    workflow_dispatch:
+    push:
+        branches: [main]
+
+jobs:
+    promote-rollout:
+        name: Promote Argo Rollout (gated)
+        runs-on: ubuntu-latest
+        env:
+            ROLLOUT_NAME: api-rollout
+            NAMESPACE: predator-dev
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install kubectl
+              uses: azure/setup-kubectl@v4
+
+            - name: Install argo-rollouts kubectl plugin
+              run: |
+                  curl -sLO https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-linux-amd64
+                  chmod +x kubectl-argo-rollouts-linux-amd64
+                  sudo mv kubectl-argo-rollouts-linux-amd64 /usr/local/bin/kubectl-argo-rollouts
+
+            - name: Configure kubeconfig
+              if: secrets.KUBECONFIG_DATA != ''
+              run: |
+                  echo "$KUBECONFIG_DATA" | base64 --decode > kubeconfig
+                  mkdir -p $HOME/.kube
+                  mv kubeconfig $HOME/.kube/config
+              env:
+                  KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_DATA }}
+
+            - name: Check rollout status
+              run: |
+                  set -e
+                  echo "Fetching rollout: $ROLLOUT_NAME in $NAMESPACE"
+                  kubectl argo rollouts get rollout $ROLLOUT_NAME -n $NAMESPACE || (kubectl get rollout -n $NAMESPACE && exit 1)
+
+            - name: Promote rollout (conditional)
+              if: secrets.ALLOW_AUTO_PROMOTE == 'true' && secrets.KUBECONFIG_DATA != ''
+              run: |
+                  echo "Auto-promotion enabled — attempting to promote $ROLLOUT_NAME"
+                  kubectl argo rollouts promote $ROLLOUT_NAME -n $NAMESPACE
+
+            - name: Manual instruction if not promoted
+              if: secrets.ALLOW_AUTO_PROMOTE != 'true' || secrets.KUBECONFIG_DATA == ''
+              run: |
+                  echo "Auto-promotion is disabled or kubeconfig is missing. To enable automatic promotion, set repository secret ALLOW_AUTO_PROMOTE=true and provide KUBECONFIG_DATA (base64)."

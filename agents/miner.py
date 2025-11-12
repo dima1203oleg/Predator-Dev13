@@ -181,7 +181,7 @@ class MinerAgent(BaseAgent):
             try:
                 reg_dt = datetime.fromisoformat(reg_date)
                 return (datetime.now() - reg_dt).days < 30
-            except:
+            except Exception:
                 pass
         return False
 

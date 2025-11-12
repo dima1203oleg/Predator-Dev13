@@ -1,0 +1,25 @@
+name: collect-docker-logs
+
+on:
+    workflow_dispatch:
+
+jobs:
+    collect:
+        runs-on: ubuntu-latest
+        permissions:
+            actions: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Run log collector
+              run: |
+                  set -euo pipefail
+                  bash ./scripts/collect_docker_logs.sh
+
+            - name: Upload diagnostics artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docker-diagnostics
+                  path: |
+                      logs/docker-diagnostics-*

@@ -503,7 +503,7 @@ class RiskAssessmentAgent(BaseAgent):
                     try:
                         encoded = encoder.transform([value])[0]
                         features.append(float(encoded))
-                    except:
+                    except Exception:
                         features.append(0.0)  # Unknown category
                 else:
                     # Normalize numerical values
@@ -589,7 +589,7 @@ class RiskAssessmentAgent(BaseAgent):
                 return min(1, value)
             else:
                 return min(max(float(value), 0), 1)
-        except:
+        except Exception:
             return 0.5
 
     def _normalize_operational_factor(self, factor_name: str, value: Any) -> float:
@@ -609,7 +609,7 @@ class RiskAssessmentAgent(BaseAgent):
                 return min(1, value)
             else:
                 return min(max(float(value), 0), 1)
-        except:
+        except Exception:
             return 0.5
 
     def _normalize_compliance_factor(self, factor_name: str, value: Any) -> float:
@@ -627,7 +627,7 @@ class RiskAssessmentAgent(BaseAgent):
                 return 1 - value  # Lower training = higher risk
             else:
                 return min(max(float(value), 0), 1)
-        except:
+        except Exception:
             return 0.5
 
     def _normalize_reputational_factor(self, factor_name: str, value: Any) -> float:
@@ -645,7 +645,7 @@ class RiskAssessmentAgent(BaseAgent):
                 return min(1, value / 5)
             else:
                 return min(max(float(value), 0), 1)
-        except:
+        except Exception:
             return 0.5
 
     def _normalize_strategic_factor(self, factor_name: str, value: Any) -> float:
@@ -665,7 +665,7 @@ class RiskAssessmentAgent(BaseAgent):
                 return min(1, value)
             else:
                 return min(max(float(value), 0), 1)
-        except:
+        except Exception:
             return 0.5
 
     def _calculate_overall_risk_score(self, dimension_scores: dict[str, float]) -> float:

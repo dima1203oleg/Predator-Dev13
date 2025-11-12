@@ -1,0 +1,30 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-containers
+spec:
+  validationFailureAction: enforce
+  rules:
+    - name: require-nonroot-user
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "Containers must run as non-root user."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+    - name: restrict-host-path
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: "HostPath volumes are not allowed."
+        pattern:
+          spec:
+            volumes:
+              - =(hostPath): "*"

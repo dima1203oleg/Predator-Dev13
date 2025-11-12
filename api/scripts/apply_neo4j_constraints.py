@@ -6,8 +6,8 @@ to ensure required constraints exist before application traffic starts.
 """
 import os
 import sys
-from neo4j import GraphDatabase, basic_auth
 
+from neo4j import GraphDatabase, basic_auth
 
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")

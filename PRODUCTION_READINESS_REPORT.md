@@ -1,16 +1,34 @@
-# 🎯 PREDATOR ANALYTICS V13 - PRODUCTION READINESS REPORT
+# 🚦 AUTOMATION-FIRST PRODUCTION RULES
 
-**Дата**: 10 листопада 2025 р.  
-**Статус**: ✅ **READY FOR PRODUCTION**  
-**Версія**: 13.0.0  
+> **Всі production деплои — тільки через CI/CD та GitOps! Локальні деплои, ручні зміни — ЗАБОРОНЕНО!**
+
+- Всі зміни — через PR → CI → CD → ArgoCD → Rollouts → Smoke/Chaos → Auto-promotion
+- Локальні деплои, ручні зміни в кластерах — ЗАБОРОНЕНО
+- KHAP (kubeconform, kube-linter, Trivy, Kubescape, Kyverno), SBOM (Syft), Cosign, Policy — блокують PR на будь-які помилки
+- Всі секрети — через ExternalSecrets + Vault/Secret Manager
+- DR, Observability, Policy — обов'язкові для продакшн
+- SRE runbook, DR playbook, operational checklist — обов'язкові
 
 ---
+
+# 🎯 PREDATOR ANALYTICS V13 - PRODUCTION READINESS REPORT
+
+
+**Дата**: 10 листопада 2025 р.
+
+**Статус**: ✅ **READY FOR PRODUCTION**
+
+**Версія**: 13.0.0
+
+---
+
 
 ## 📊 Executive Summary
 
 Predator Analytics v13 пройшов повний аудит та готовий до production deployment. Система включає 30+ агентів MAS, 58 LLM моделей, повний GitOps pipeline, observability stack, security hardening, chaos engineering та DR procedures.
 
 **Ключові досягнення**:
+
 - ✅ Повна umbrella Helm chart структура (16 субчартів)
 - ✅ Всі критичні конфігурації створені (OS, Qdrant, Keycloak, Prometheus)
 - ✅ Security hardening (Kyverno policies, RBAC, PII masking)
@@ -24,15 +42,18 @@ Predator Analytics v13 пройшов повний аудит та готови�
 
 ## 🔍 Аудит компонентів
 
+
 ### 1. ✅ Helm Charts (PASSED)
 
 **Umbrella chart**: `predator-umbrella` v13.0.0
+
 - Chart.yaml: коректний, версії синхронізовані
 - values.yaml: базова конфігурація
 - values-prod.yaml: production налаштування (3+ replicas, HPA, PDB)
 - values-dev.yaml: dev конфігурація (мінімальні resources)
 
 **Субчарти (16)**:
+
 1. ✅ `api` - FastAPI backend
 2. ✅ `frontend` - React Nexus/OpenWebUI/OS Dashboard
 3. ✅ `agents` - MAS (30+ агентів)
@@ -51,6 +72,7 @@ Predator Analytics v13 пройшов повний аудит та готови�
 16. ✅ `observability` - Prom/Graf/Loki/Tempo
 
 **Templates**:
+
 - ✅ `_helpers.tpl` - Helm helpers
 - ✅ `namespace.yaml` - Pod security labels
 - ✅ `ingress.yaml` - Hardened ingress
@@ -465,23 +487,23 @@ Predator Analytics v13 пройшов повний аудит та готови�
 **Predator Analytics v13 ГОТОВИЙ ДО PRODUCTION** ✅
 
 ### Що реалізовано (100/100):
-✅ Umbrella Helm chart з 16 субчартами  
-✅ 30+ агентів MAS (Retriever, Miner, Arbiter, CorruptionDetector, LobbyMap, Forecast, AutoHeal, SelfImprovement, тощо)  
-✅ 58 LLM моделей (Ollama локальні + API hybrid з роутером/арбітражем)  
-✅ Повний ETL/CDC pipeline (Debezium, Celery, парсери, consistency checks)  
-✅ OpenSearch з ILM/PII-masking/ukrainian analyzer  
-✅ Qdrant векторна БД з deduplication  
-✅ PostgreSQL з Timescale, CDC, outbox, міграції  
-✅ Keycloak OIDC/RBAC з 6 ролями, MFA, PII scope  
-✅ Kyverno security policies (10 правил)  
-✅ Observability stack (Prom/Graf/Loki/Tempo з burn-rate алертами)  
-✅ DevOps pipeline (ArgoCD canary, Tekton 11-step CI/CD, SBOM/Cosign)  
-✅ Chaos engineering (7 Litmus експериментів)  
-✅ DR procedures (Velero, pgBackRest, OS/Qdrant snapshots, RTO/RPO)  
-✅ Voice interface (Whisper STT, pyttsx3 TTS українською)  
-✅ Self-learning (LoRA query-driven retrain, ContentRelevance, MLflow)  
-✅ Білінг (Guest/Client/Pro з PII toggle)  
-✅ Production deployment guide з runbooks  
+✅ Umbrella Helm chart з 16 субчартами
+✅ 30+ агентів MAS (Retriever, Miner, Arbiter, CorruptionDetector, LobbyMap, Forecast, AutoHeal, SelfImprovement, тощо)
+✅ 58 LLM моделей (Ollama локальні + API hybrid з роутером/арбітражем)
+✅ Повний ETL/CDC pipeline (Debezium, Celery, парсери, consistency checks)
+✅ OpenSearch з ILM/PII-masking/ukrainian analyzer
+✅ Qdrant векторна БД з deduplication
+✅ PostgreSQL з Timescale, CDC, outbox, міграції
+✅ Keycloak OIDC/RBAC з 6 ролями, MFA, PII scope
+✅ Kyverno security policies (10 правил)
+✅ Observability stack (Prom/Graf/Loki/Tempo з burn-rate алертами)
+✅ DevOps pipeline (ArgoCD canary, Tekton 11-step CI/CD, SBOM/Cosign)
+✅ Chaos engineering (7 Litmus експериментів)
+✅ DR procedures (Velero, pgBackRest, OS/Qdrant snapshots, RTO/RPO)
+✅ Voice interface (Whisper STT, pyttsx3 TTS українською)
+✅ Self-learning (LoRA query-driven retrain, ContentRelevance, MLflow)
+✅ Білінг (Guest/Client/Pro з PII toggle)
+✅ Production deployment guide з runbooks
 
 ### Наступні кроки:
 1. Створити Docker images (Dockerfile для 5 сервісів)
@@ -497,6 +519,6 @@ Predator Analytics v13 пройшов повний аудит та готови�
 
 ---
 
-**Підготував**: GitHub Copilot  
-**Дата**: 10 листопада 2025 р.  
+**Підготував**: GitHub Copilot
+**Дата**: 10 листопада 2025 р.
 **Версія звіту**: 1.0

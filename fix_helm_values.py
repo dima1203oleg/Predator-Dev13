@@ -4,14 +4,16 @@ Script to fix missing Helm chart values sections that cause nil pointer errors.
 Adds missing image, service, autoscaling, and serviceAccount sections to all values.yaml files.
 """
 
-import os
-import yaml
 import glob
+import os
+
+import yaml
+
 
 def load_yaml(file_path):
     """Load YAML file safely."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             return yaml.safe_load(f)
     except Exception as e:
         print(f"Error loading {file_path}: {e}")

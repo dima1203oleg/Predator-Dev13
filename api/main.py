@@ -262,28 +262,29 @@ async def upload_customs_data(
         UploadResponse with processing statistics
     """
     import time
+
     from api.upload_service import MultiDatabaseUploadService
-    
+
     start_time = time.time()
     temp_path = None
-    
+
     try:
         logger.info(f"📤 Upload started by user '{user.username}': {file.filename}")
-        
+
         # Auto-generate dataset name if not provided
         if not dataset_name:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = file.filename.rsplit('.', 1)[0]
             dataset_name = f"customs_{timestamp}_{base_name}"
-        
+
         # Save temp file
         temp_path = f"/tmp/upload_{datetime.now().timestamp()}_{file.filename}"
         content = await file.read()
         with open(temp_path, "wb") as f:
             f.write(content)
-        
+
         logger.info(f"✅ Saved temp file: {temp_path}")
-        
+
         # Process upload using Multi-Database service
         upload_service = MultiDatabaseUploadService()
         result = await upload_service.process_upload(
@@ -293,17 +294,17 @@ async def upload_customs_data(
             owner=user.username,
             db=db
         )
-        
+
         # Cleanup temp file
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
-            logger.info(f"🗑️ Cleaned up temp file")
-        
+            logger.info("🗑️ Cleaned up temp file")
+
         # Update Prometheus metrics
         CUSTOMS_RECORDS_TOTAL.inc(result["records_processed"])
-        
+
         processing_time = time.time() - start_time
-        
+
         # Log summary
         logger.info(
             "Upload completed for user '%s', file '%s', dataset '%s'. "
@@ -316,7 +317,7 @@ async def upload_customs_data(
             result["failed"],
             processing_time,
         )
-        
+
         if result["errors"]:
             logger.warning("⚠️ Errors during indexing: %s", result["errors"])
 

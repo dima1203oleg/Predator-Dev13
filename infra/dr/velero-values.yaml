@@ -1,0 +1,25 @@
+# Velero Helm values for Predator Analytics
+configuration:
+  provider: aws
+  backupStorageLocation:
+    name: default
+    bucket: predator-backups
+    config:
+      region: us-east-1
+      s3ForcePathStyle: true
+      s3Url: http://minio:9000
+  volumeSnapshotLocation:
+    name: default
+    config:
+      region: us-east-1
+credentials:
+  useSecret: true
+  secretName: velero-credentials
+  secretKey: cloud
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi

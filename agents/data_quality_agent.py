@@ -1106,7 +1106,7 @@ class DataQualityAgent(BaseAgent):
                     try:
                         pd.to_datetime(df[col].dropna().head(10))
                         date_formats.append("consistent")
-                    except:
+                    except Exception:
                         date_formats.append("inconsistent")
 
                 if len(set(date_formats)) > 1:

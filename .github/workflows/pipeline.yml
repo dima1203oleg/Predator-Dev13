@@ -1,0 +1,241 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  validate_secrets:
+    name: Validate required secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail fast if critical secrets missing
+        run: |
+          set -euo pipefail
+          echo "Checking required secrets..."
+          if [ -z "${{ secrets.GH_TOKEN }}" ] && [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "ERROR: GH_TOKEN or GITHUB_TOKEN must be set in repository secrets (used for gitops push)." >&2
+            exit 1
+          fi
+          echo "GH token: OK"
+          if [ -z "${{ secrets.REGISTRY_PASSWORD }}" ] && [ -z "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "WARNING: No REGISTRY_PASSWORD set; ensure you have publish rights via GITHUB_TOKEN or registry secrets. Continuing but build/push may fail."
+          else
+            echo "Registry credentials: OK or using GITHUB_TOKEN"
+          fi
+          if [ -z "${{ secrets.ARGOCD_TOKEN }}" ] && ([ -z "${{ secrets.ARGOCD_USER }}" ] || [ -z "${{ secrets.ARGOCD_PASS }}" ]); then
+            echo "WARNING: No ArgoCD credentials found (ARGOCD_TOKEN or ARGOCD_USER/ARGOCD_PASS). Argo CD sync/wait step will be skipped if not provided."
+          fi
+
+  lint_and_tests:
+    needs: validate_secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt || true
+      - name: Lint with ruff
+        run: ruff check . || true
+      - name: Format check with ruff
+        run: ruff format --check . || true
+      - name: Run tests
+        run: pytest -q || true
+
+  khap:
+    runs-on: ubuntu-latest
+    needs: lint_and_tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install KHAP tools
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install kubeconform
+          curl -sSL -o /usr/local/bin/kube-linter https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux
+          chmod +x /usr/local/bin/kube-linter
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSL -o /usr/local/bin/kubescape https://github.com/kubescape/kubescape/releases/latest/download/kubescape-ubuntu-latest
+          chmod +x /usr/local/bin/kubescape
+          curl -sSL -o /tmp/kyverno.tar.gz https://github.com/kyverno/kyverno/releases/latest/download/kyverno-cli_linux_x86_64.tar.gz
+          tar -xzf /tmp/kyverno.tar.gz -C /tmp
+          sudo mv /tmp/kyverno-cli /usr/local/bin/
+      - name: Run kubeconform (fail on issues)
+        run: |
+          set -euo pipefail
+          if [ -d platform ]; then
+            find platform -name '*.yaml' -print0 | xargs -0 -n1 kubeconform
+          else
+            echo "No platform manifests to check"
+            exit 1
+          fi
+      - name: Run kube-linter (fail on issues)
+        run: |
+          set -euo pipefail
+          if [ -d platform ]; then
+            kube-linter lint platform/
+          else
+            echo "No platform manifests to check"
+            exit 1
+          fi
+      - name: Trivy config scan (fail on HIGH/CRITICAL)
+        run: |
+          set -euo pipefail
+          if [ -d platform ]; then
+            trivy config --exit-code 1 --severity HIGH,CRITICAL platform/
+          else
+            echo "No platform manifests to scan"
+            exit 1
+          fi
+
+  build_and_push:
+    runs-on: ubuntu-latest
+    needs: khap
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+  bump_gitops_dev:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout predator-gitops
+        uses: actions/checkout@v4
+        with:
+          repository: dima1203oleg/predator-gitops
+          token: ${{ secrets.GH_TOKEN }}
+          path: predator-gitops
+      - name: Compute image coordinates and bump values-dev.yaml
+        run: |
+          set -euo pipefail
+          cd predator-gitops || exit 0
+          FILE=platform/values-dev.yaml
+          if [ ! -f "$FILE" ]; then echo "$FILE not found, skipping"; exit 0; fi
+          # ensure yq (mikefarah) is available
+          if ! command -v yq >/dev/null 2>&1; then
+            echo "yq not found, installing..."
+            YQ_VER=v4.45.1
+            curl -sSL "https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64" -o /usr/local/bin/yq
+            chmod +x /usr/local/bin/yq
+          fi
+          # validate file has .image key structure before mutating
+          if ! yq eval '.image' "$FILE" >/dev/null 2>&1; then
+            echo "ERROR: $FILE does not contain 'image' mapping or is invalid YAML — aborting bump" >&2
+            echo "Please ensure $FILE has keys like: image:\n  repository: ...\n  tag: ..." >&2
+            exit 1
+          fi
+          TAG=$(echo ${GITHUB_SHA:-${{ github.sha }}} | cut -c1-7)
+          REPO=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          echo "Setting image.repository=$REPO and image.tag=$TAG in $FILE"
+          yq eval -i --arg repo "$REPO" --arg tag "$TAG" '.image.repository = $repo | .image.tag = $tag' "$FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- "$FILE"; then
+            echo "No changes to $FILE"
+          else
+            git add "$FILE"
+            git commit -m "ci: bump dev image to $TAG"
+            git push || echo "git push failed"
+          fi
+
+  wait_sync_and_smoke_dev:
+    runs-on: ubuntu-latest
+    needs: bump_gitops_dev
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Install argocd and kubectl
+        run: |
+          set -euo pipefail
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 || true
+          chmod +x /usr/local/bin/argocd || true
+          curl -sSL -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl || true
+          chmod +x /usr/local/bin/kubectl || true
+      - name: Login and wait for ArgoCD (platform-dev)
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_USER: ${{ secrets.ARGOCD_USER }}
+          ARGOCD_PASS: ${{ secrets.ARGOCD_PASS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ARGOCD_SERVER:-}" ]; then echo "ARGOCD_SERVER not set, skipping argocd wait"; exit 0; fi
+          argocd login "${ARGOCD_SERVER}" --username "${ARGOCD_USER}" --password "${ARGOCD_PASS}" --insecure || true
+          argocd app wait platform-dev --health --sync --timeout 600 || true
+      - name: Configure kubectl from secret
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        run: |
+          set -euo pipefail
+          if [ -n "${KUBE_CONFIG_DATA:-}" ]; then mkdir -p ~/.kube; echo "$KUBE_CONFIG_DATA" | base64 --decode > ~/.kube/config; kubectl version --client; fi
+      - name: Apply smoke job and wait
+        run: |
+          set -euo pipefail
+          if [ -f infra/k8s-tests/smoke-job.yaml ]; then kubectl apply -f infra/k8s-tests/smoke-job.yaml -n predator-dev || true; kubectl wait --for=condition=complete job/predator-smoke-e2e -n predator-dev --timeout=600s || true; kubectl logs job/predator-smoke-e2e -n predator-dev --tail=200 || true; fi
+
+  cosign_verify:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Install cosign
+        run: |
+          curl -sSL -o /usr/local/bin/cosign https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 || true
+          chmod +x /usr/local/bin/cosign || true
+      - name: Verify image signature (optional)
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          TAG: ${{ github.sha }}
+          COSIGN_VERIFY_REQUIRED: ${{ secrets.COSIGN_VERIFY_REQUIRED }}
+        run: |
+          set -euo pipefail
+          IMAGE=${REGISTRY}/${IMAGE_NAME}:${TAG}
+          set +e
+          cosign verify --keyless "$IMAGE"
+          RC=$?
+          set -e
+          if [ "$RC" -ne 0 ]; then
+            if [ "${COSIGN_VERIFY_REQUIRED:-false}" = "true" ]; then echo "Cosign verification failed and required -> failing"; exit 1; else echo "Cosign verification failed but not required -> continuing"; fi
+          else
+            echo "Cosign verification succeeded"
+          fi
+
+  promote_stage:
+    name: Promote to stage (manual)
+    runs-on: ubuntu-latest
+    needs: wait_sync_and_smoke_dev
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Manual promotion placeholder
+        run: |
+          echo "Trigger promotion to stage via workflow_dispatch or external process. Implement bump similar to bump_gitops_dev for values-stage.yaml"

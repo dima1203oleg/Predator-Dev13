@@ -1,0 +1,53 @@
+apiVersion: v2
+name: platform
+description: Umbrella chart for Predator Analytics v13
+type: application
+version: 0.1.0
+appVersion: "13.0"
+
+dependencies:
+  - name: api
+    version: "0.1.0"
+    repository: "file://./charts/api"
+  - name: workers
+    version: "0.1.0"
+    repository: "file://./charts/workers"
+  - name: router-llm
+    version: "0.1.0"
+    repository: "file://./charts/router-llm"
+  - name: ollama
+    version: "0.1.0"
+    repository: "file://./charts/ollama"
+  - name: postgres
+    version: "0.1.0"
+    repository: "file://./charts/postgres"
+  - name: opensearch
+    version: "0.1.0"
+    repository: "file://./charts/opensearch"
+  - name: qdrant
+    version: "0.1.0"
+    repository: "file://./charts/qdrant"
+  - name: minio
+    version: "0.1.0"
+    repository: "file://./charts/minio"
+  - name: redis
+    version: "0.1.0"
+    repository: "file://./charts/redis"
+  - name: neo4j
+    version: "0.1.0"
+    repository: "file://./charts/neo4j"
+  - name: mlflow
+    version: "0.1.0"
+    repository: "file://./charts/mlflow"
+  - name: kafka
+    version: "0.1.0"
+    repository: "file://./charts/kafka"
+  - name: keycloak
+    version: "0.1.0"
+    repository: "file://./charts/keycloak"
+  - name: observability
+    version: "0.1.0"
+    repository: "file://./charts/observability"
+  - name: gateway
+    version: "0.1.0"
+    repository: "file://./charts/gateway"

@@ -3,16 +3,17 @@ Upload Service: Multi-Database Indexing
 Автоматично індексує дані у всі бази даних без дублювання
 """
 
+import logging
 import os
 import time
-import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from sqlalchemy.orm import Session
-from opensearchpy import OpenSearch, helpers as opensearch_helpers
-from neo4j import GraphDatabase
 import redis
+from neo4j import GraphDatabase
+from opensearchpy import OpenSearch
+from opensearchpy import helpers as opensearch_helpers
+from sqlalchemy.orm import Session
 
 from api.models import Dataset, Record
 from api.qdrant_manager import QdrantManager

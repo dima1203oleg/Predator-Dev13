@@ -207,11 +207,11 @@ class NaturalLanguageProcessingAgent(BaseAgent):
                         # Use Ukrainian model if available, otherwise English fallback
                         try:
                             self.text_processors[lang] = spacy.load("uk_core_news_sm")
-                        except:
+                        except Exception:
                             self.text_processors[lang] = spacy.load("en_core_web_sm")
                     else:
                         self.text_processors[lang] = spacy.load("en_core_web_sm")
-                except:
+                except Exception:
                     self.text_processors[lang] = English()
 
             # Initialize transformers pipelines
@@ -1736,7 +1736,7 @@ class NaturalLanguageProcessingAgent(BaseAgent):
 
             return max(1, count)
 
-        except:
+        except Exception:
             return 1
 
     def _preprocess_text(self, text: str, language: str) -> str:

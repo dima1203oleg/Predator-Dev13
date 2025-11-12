@@ -1,3 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.env
+mlflow.db
+mlruns/
+.qdrant/
+.opensearch/
+.idea/
+.DS_Store
 # Python
 __pycache__/
 *.py[cod]

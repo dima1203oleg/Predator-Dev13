@@ -1,31 +1,26 @@
 import os
-import sys
-import uuid
-import asyncio
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List
 
-from sqlalchemy.orm import Session
-from opensearchpy import OpenSearch, helpers as opensearch_helpers
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, Distance, VectorParams
-from neo4j import GraphDatabase
 import redis
-import hashlib
-import requests # For Ollama integration
-import json # For Ollama integration
+import requests  # For Ollama integration
+from neo4j import GraphDatabase
+from opensearchpy import OpenSearch
+from opensearchpy import helpers as opensearch_helpers
+from qdrant_client.models import Distance
+from sqlalchemy.orm import Session
 
-from parsers.excel_parser import ExcelParser
-from api.database import SessionLocal, engine, Base
-from api.models import Dataset, Record, IndexError
+from api.database import Base, SessionLocal, engine
+from api.models import Dataset, Record
 from api.qdrant_manager import QdrantManager
+from parsers.excel_parser import ExcelParser
 
 # Ensure all tables are created (if not already)
 Base.metadata.create_all(bind=engine)
 
 class MultiDatabaseIndexer:
     """Індексує дані у всі бази даних з дедуплікацією"""
-    
+
     def __init__(self, db_session: Session = None):
         # Configuration from environment variables
         self.opensearch_host = os.getenv("OPENSEARCH_HOST", "localhost")
@@ -42,7 +37,7 @@ class MultiDatabaseIndexer:
         self.redis_port = int(os.getenv("REDIS_PORT", 6379))
         self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.ollama_embed_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-        
+
         # Database session for DLQ logging
         self.db_session = db_session
 
@@ -54,20 +49,20 @@ class MultiDatabaseIndexer:
             verify_certs=False,
             ssl_show_warn=False
         )
-        
+
         # Qdrant
         self.qdrant_manager = QdrantManager(
             host=self.qdrant_host,
             port=self.qdrant_port,
             collection_name=self.qdrant_collection
         )
-        
+
         # Neo4j
         self.neo4j_driver = GraphDatabase.driver(
             self.neo4j_uri,
             auth=(self.neo4j_user, self.neo4j_password)
         )
-        
+
         # Redis
         self.redis_client = redis.Redis(
             host=self.redis_host,
@@ -75,14 +70,14 @@ class MultiDatabaseIndexer:
             db=0,
             decode_responses=True
         )
-        
+
         print("✅ Initialized all database connections")
-    
+
     def setup_opensearch_aliases(self):
         """Створює aliases для OpenSearch: write/read/safe"""
         try:
             index_name = "customs_records"
-            
+
             # Write alias (для індексації)
             write_alias = {
                 "actions": [
@@ -95,7 +90,7 @@ class MultiDatabaseIndexer:
                     }
                 ]
             }
-            
+
             # Read alias (для пошуку)
             read_alias = {
                 "actions": [
@@ -107,7 +102,7 @@ class MultiDatabaseIndexer:
                     }
                 ]
             }
-            
+
             # Safe alias (з PII маскуванням)
             safe_alias = {
                 "actions": [
@@ -119,7 +114,7 @@ class MultiDatabaseIndexer:
                     }
                 ]
             }
-            
+
             # Apply aliases
             for alias_name, alias_body in [
                 ("write", write_alias),
@@ -131,10 +126,10 @@ class MultiDatabaseIndexer:
                     print(f"✅ OpenSearch alias 'pa-customs-{alias_name}' created")
                 except Exception as e:
                     print(f"⚠️ Failed to create alias 'pa-customs-{alias_name}': {e}")
-                    
+
         except Exception as e:
             print(f"⚠️ Error setting up OpenSearch aliases: {e}")
-    
+
     def setup_opensearch_pii_pipeline(self):
         """Створює ingest pipeline для PII маскування"""
         try:
@@ -150,7 +145,7 @@ class MultiDatabaseIndexer:
                     },
                     {
                         "set": {
-                            "field": "company_name_masked", 
+                            "field": "company_name_masked",
                             "value": "REDACTED",
                             "if": "ctx.company_name != null"
                         }
@@ -163,28 +158,28 @@ class MultiDatabaseIndexer:
                     }
                 ]
             }
-            
+
             self.opensearch.ingest.put_pipeline(
                 id="pii_masking_pipeline",
                 body=pipeline_body
             )
             print("✅ OpenSearch PII masking pipeline created")
-            
+
         except Exception as e:
             print(f"⚠️ Failed to create PII pipeline: {e}")
-    
+
     def _log_index_error(self, record: Record, target_db: str, operation: str, error: Exception):
         """Логує помилки індексації у DLQ таблицю"""
         try:
+
             from api.models import IndexError
-            from sqlalchemy.orm import Session
-            
+
             # Get db session from indexer
             db_session = getattr(self, 'db_session', None)
             if not db_session:
                 print(f"⚠️ Cannot log DLQ error - no db session: {target_db}/{operation}: {error}")
                 return
-                
+
             dlq_entry = IndexError(
                 record_id=record.id,
                 target_db=target_db,
@@ -194,60 +189,60 @@ class MultiDatabaseIndexer:
             )
             db_session.add(dlq_entry)
             db_session.commit()
-            
+
         except Exception as dlq_error:
             print(f"⚠️ Failed to log DLQ error: {dlq_error}")
-    
+
     def reindex_from_postgres(self, dataset_id: str, batch_size: int = 1000):
         """Повний reindex з PostgreSQL у всі цільові БД"""
         try:
             from api.models import Record
-            
+
             print(f"🔄 Starting full reindex for dataset {dataset_id}")
-            
+
             # Отримуємо всі записи датасету
             records = self.db_session.query(Record).filter(Record.dataset_id == dataset_id).all()
             total_records = len(records)
-            
+
             print(f"📊 Found {total_records} records to reindex")
-            
+
             # Reindex у батчах
             for i in range(0, total_records, batch_size):
                 batch = records[i:i + batch_size]
                 print(f"  Processing batch {i//batch_size + 1}/{(total_records + batch_size - 1)//batch_size}")
-                
+
                 # OpenSearch
                 os_count = self.index_to_opensearch(batch)
-                
+
                 # Qdrant (перегенеруємо embeddings)
                 qdrant_count = self.index_to_qdrant(batch)
-                
+
                 # Neo4j
                 neo4j_count = self.index_to_neo4j(batch)
-                
+
                 # Redis
                 redis_count = self.cache_to_redis(batch)
-                
+
                 print(f"    Batch results: OS={os_count}, Qdrant={qdrant_count}, Neo4j={neo4j_count}, Redis={redis_count}")
-            
+
             print(f"✅ Reindex completed for dataset {dataset_id}")
             return True
-            
+
         except Exception as e:
             print(f"❌ Reindex failed: {e}")
             return False
-    
+
     def consistency_check(self, dataset_id: str, sample_size: int = 100):
         """Перевірка консистентності між БД"""
         try:
             from api.models import Record
-            
+
             print(f"🔍 Starting consistency check for dataset {dataset_id}")
-            
+
             # Підрахуємо в PG
             pg_count = self.db_session.query(Record).filter(Record.dataset_id == dataset_id).count()
             print(f"📊 PostgreSQL: {pg_count} records")
-            
+
             # OpenSearch
             try:
                 os_result = self.opensearch.count(index="customs_records", body={"query": {"match_all": {}}})
@@ -256,7 +251,7 @@ class MultiDatabaseIndexer:
             except Exception as e:
                 print(f"⚠️ OpenSearch count failed: {e}")
                 os_count = 0
-            
+
             # Qdrant
             try:
                 qdrant_info = self.qdrant_manager.get_collection_info()
@@ -265,7 +260,7 @@ class MultiDatabaseIndexer:
             except Exception as e:
                 print(f"⚠️ Qdrant count failed: {e}")
                 qdrant_count = 0
-            
+
             # Neo4j (підрахуємо IMPORTS зв'язки)
             try:
                 with self.neo4j_driver.session() as session:
@@ -275,40 +270,40 @@ class MultiDatabaseIndexer:
             except Exception as e:
                 print(f"⚠️ Neo4j count failed: {e}")
                 neo4j_count = 0
-            
+
             # Sample check (порівнюємо op_hash)
             if sample_size > 0:
                 sample_records = self.db_session.query(Record).filter(Record.dataset_id == dataset_id).limit(sample_size).all()
                 mismatches = 0
-                
+
                 for record in sample_records:
                     record_id = str(record.id)
-                    
+
                     # Check OpenSearch
                     try:
                         os_doc = self.opensearch.get(index="customs_records", id=record_id)
                         if os_doc['_source']['op_hash'] != record.op_hash:
                             mismatches += 1
-                    except:
+                    except Exception:
                         mismatches += 1
-                    
+
                     # Check Qdrant
                     try:
                         qdrant_results = self.qdrant_manager.search_similar([0.1] * 768, limit=1, filters={"pk": record.pk})
                         if not qdrant_results or qdrant_results[0]['payload']['op_hash'] != record.op_hash:
                             mismatches += 1
-                    except:
+                    except Exception:
                         mismatches += 1
-                
+
                 print(f"🔍 Sample check ({sample_size} records): {mismatches} mismatches")
-            
+
             # Summary
-            print(f"\n📈 Consistency Summary:")
+            print("\n📈 Consistency Summary:")
             print(f"  PostgreSQL: {pg_count}")
             print(f"  OpenSearch: {os_count} ({'✓' if os_count == pg_count else '✗'})")
             print(f"  Qdrant: {qdrant_count} ({'✓' if qdrant_count == pg_count else '✗'})")
             print(f"  Neo4j: {neo4j_count} ({'✓' if neo4j_count == pg_count else '✗'})")
-            
+
             return {
                 'pg_count': pg_count,
                 'os_count': os_count,
@@ -316,11 +311,11 @@ class MultiDatabaseIndexer:
                 'neo4j_count': neo4j_count,
                 'consistent': pg_count == os_count == qdrant_count == neo4j_count
             }
-            
+
         except Exception as e:
             print(f"❌ Consistency check failed: {e}")
             return None
-    
+
     def _embed_text(self, text: str) -> List[float]:
         """Generates embeddings for a given text using Ollama."""
         try:
@@ -349,11 +344,11 @@ class MultiDatabaseIndexer:
         ]
         # Filter out None values and join with a single space
         return " ".join(filter(None, parts)).strip()
-    
+
     def ensure_opensearch_index(self):
         """Створює індекс OpenSearch якщо не існує"""
         index_name = "customs_records"
-        
+
         if not self.opensearch.indices.exists(index=index_name):
             index_body = {
                 "settings": {
@@ -397,12 +392,12 @@ class MultiDatabaseIndexer:
                     }
                 }
             }
-            
+
             self.opensearch.indices.create(index=index_name, body=index_body)
             print(f"✅ Created OpenSearch index: {index_name}")
         else:
             print(f"✓ OpenSearch index already exists: {index_name}")
-    
+
     def ensure_qdrant_collection(self):
         """Створює колекцію Qdrant якщо не існує"""
         try:
@@ -414,19 +409,19 @@ class MultiDatabaseIndexer:
             print("✅ Qdrant collection ready")
         except Exception as e:
             print(f"⚠️ Qdrant collection setup: {e}")
-    
+
     def index_to_opensearch(self, records: List[Record]):
         """Індексує записи у OpenSearch"""
         if not records:
             return 0
-        
+
         actions = []
         record_map = {}  # Map action index to record
-        
+
         for idx, record in enumerate(records):
             # Створюємо повнотекстовий контент
             full_text = f"{record.company_name or ''} {record.hs_code or ''} {record.customs_office or ''} {record.edrpou or ''}"
-            
+
             doc = {
                 "_index": "customs_records",
                 "_id": str(record.id),
@@ -447,9 +442,9 @@ class MultiDatabaseIndexer:
             }
             actions.append(doc)
             record_map[idx] = record
-        
+
         success, failed = opensearch_helpers.bulk(self.opensearch, actions, raise_on_error=False)
-        
+
         # Log failed items to DLQ
         if isinstance(failed, list) and failed:
             for fail_item in failed:
@@ -462,23 +457,23 @@ class MultiDatabaseIndexer:
                         'bulk_index',
                         Exception(str(error_msg))
                     )
-        
+
         print(f"✅ OpenSearch: indexed {success} records, failed {len(failed) if isinstance(failed, list) else 0}")
         return success
-    
+
     def index_to_qdrant(self, records: List[Record]):
         """Індексує записи у Qdrant (векторний пошук)"""
         if not records:
             return 0
-        
+
         points = []
         failed_records = []
-        
+
         for record in records:
             try:
                 text_for_embedding = self._make_text_for_embedding(record)
                 embedding = self._embed_text(text_for_embedding)
-                
+
                 if not embedding:
                     print(f"⚠️ Skipping Qdrant indexing for record {record.id} due to embedding error.")
                     self._log_index_error(record, 'qdrant', 'embed', Exception("Empty embedding returned"))
@@ -500,23 +495,23 @@ class MultiDatabaseIndexer:
                     }
                 }
                 points.append(point)
-                
+
             except Exception as e:
                 print(f"⚠️ Failed to prepare Qdrant point for record {record.id}: {e}")
                 self._log_index_error(record, 'qdrant', 'prepare_point', e)
                 failed_records.append(record)
-        
+
         if points:
             stats = self.qdrant_manager.upsert_vectors(points, batch_size=100)
             print(f"✅ Qdrant: upserted {stats['upserted']} vectors, skipped {stats['skipped']}, failed {stats['failed']}")
             return stats['upserted']
         return 0
-    
+
     def index_to_neo4j(self, records: List[Record]):
         """Індексує записи у Neo4j (графова БД)"""
         if not records:
             return 0
-        
+
         indexed = 0
         with self.neo4j_driver.session() as session:
             for record in records:
@@ -534,7 +529,7 @@ class MultiDatabaseIndexer:
                     }]->(p)
                     MERGE (p)-[:FROM_COUNTRY]->(co)
                     """
-                    
+
                     session.run(query, {
                         "edrpou": record.edrpou or "UNKNOWN",
                         "company_name": record.company_name or "Unknown Company",
@@ -549,19 +544,19 @@ class MultiDatabaseIndexer:
                 except Exception as e:
                     print(f"⚠️ Neo4j error for record {record.id}: {e}")
                     self._log_index_error(record, 'neo4j', 'merge_graph', e)
-        
+
         print(f"✅ Neo4j: created {indexed} graph nodes/relationships")
         return indexed
-    
+
     def cache_to_redis(self, records: List[Record]):
         """Кешує статистику у Redis"""
         if not records:
             return 0
-        
+
         # Кешуємо агреговану статистику
         pipeline = self.redis_client.pipeline()
         cached_count = 0
-        
+
         for record in records:
             # Кеш по HS коду
             if record.hs_code:
@@ -569,18 +564,18 @@ class MultiDatabaseIndexer:
                 pipeline.incr(key)
                 pipeline.expire(key, 3600)  # 1 година
                 cached_count += 1
-            
+
             # Кеш по компанії
             if record.edrpou:
                 key = f"company:{record.edrpou}:total_amount"
                 pipeline.incrbyfloat(key, float(record.amount) if record.amount else 0)
                 pipeline.expire(key, 3600)
                 cached_count += 1 # Count each key update as a cached item
-        
+
         pipeline.execute()
         print(f"✅ Redis: cached statistics for {cached_count} operations")
         return cached_count
-    
+
     def close(self):
         """Закриває всі з'єднання"""
         try:
@@ -602,13 +597,13 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
     """
     db: Session = SessionLocal()
     indexer = MultiDatabaseIndexer(db_session=db)
-    
+
     try:
         # Ініціалізуємо індекси/колекції
         print("\n🔧 Initializing database schemas...")
         indexer.ensure_opensearch_index()
         indexer.ensure_qdrant_collection()
-        
+
         # 1. Create a new Dataset
         print(f"\n📊 Creating dataset: {dataset_name}")
         dataset = Dataset(
@@ -625,7 +620,7 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
         print(f"✅ Created Dataset with ID: {dataset.id}")
 
         # 2. Parse the Excel file
-        print(f"\n📝 Parsing Excel file...")
+        print("\n📝 Parsing Excel file...")
         parser = ExcelParser()
         parse_result = parser.parse(file_path)
         records_data = parse_result["records"]
@@ -637,7 +632,7 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
         new_records_batch = []
 
         # 3. Insert parsed records into PostgreSQL
-        print(f"\n💾 Inserting into PostgreSQL...")
+        print("\n💾 Inserting into PostgreSQL...")
         for record_data in records_data:
             try:
                 # Check for duplicates based on op_hash
@@ -668,17 +663,17 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
                 db.add(record)
                 new_records_batch.append(record)
                 pg_processed += 1
-                
+
                 # Commit у батчах по BATCH_SIZE_PG_COMMIT записів
                 if len(new_records_batch) >= int(os.getenv("BATCH_SIZE_PG_COMMIT", 1000)):
                     db.commit()
                     print(f"  ✓ Committed batch of {len(new_records_batch)} records to PostgreSQL")
                     new_records_batch = []
-                    
+
             except Exception as e:
                 print(f"⚠️ Failed to process record for PostgreSQL: {e}")
                 pg_failed += 1
-        
+
         # Final commit for any remaining records
         if new_records_batch:
             db.commit()
@@ -691,10 +686,10 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
 
         # 4. Індексуємо у інші бази даних
         print(f"\n🔄 Indexing {pg_processed} records to other databases...")
-        
+
         # Отримуємо всі нові записи для індексації
         all_records_for_indexing = db.query(Record).filter(Record.dataset_id == dataset.id).all()
-        
+
         opensearch_indexed_count = 0
         qdrant_upserted_count = 0
         neo4j_indexed_count = 0
@@ -703,22 +698,22 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
         # OpenSearch
         print("\n🔍 Indexing to OpenSearch...")
         opensearch_indexed_count = indexer.index_to_opensearch(all_records_for_indexing)
-        
+
         # Qdrant
         print("\n🧮 Indexing to Qdrant (vector database)...")
         qdrant_upserted_count = indexer.index_to_qdrant(all_records_for_indexing)
-        
+
         # Neo4j
         print("\n🕸️ Indexing to Neo4j (graph database)...")
         neo4j_indexed_count = indexer.index_to_neo4j(all_records_for_indexing)
-        
+
         # Redis
         print("\n⚡ Caching to Redis...")
         redis_cached_count = indexer.cache_to_redis(all_records_for_indexing)
 
         # Final summary
         print(f"\n{'='*60}")
-        print(f"✅ PROCESSING COMPLETE")
+        print("✅ PROCESSING COMPLETE")
         print(f"{'='*60}")
         print(f"Dataset ID: {dataset.id}")
         print(f"Dataset Name: {dataset.name}")
@@ -727,7 +722,7 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
         print(f"Records inserted to PostgreSQL: {pg_processed}")
         print(f"Duplicates skipped (PostgreSQL): {pg_duplicates}")
         print(f"Failed records (PostgreSQL): {pg_failed}")
-        print(f"\n📊 Indexed across all databases:")
+        print("\n📊 Indexed across all databases:")
         print(f"  ✓ PostgreSQL: {pg_processed} records")
         print(f"  ✓ OpenSearch: {opensearch_indexed_count} records indexed")
         print(f"  ✓ Qdrant: {qdrant_upserted_count} vectors upserted")
@@ -746,7 +741,7 @@ def process_excel_file(file_path: str, dataset_name: str, owner: str = "system_u
 if __name__ == "__main__":
     excel_file_path = "/Users/dima/Desktop/Березень_2024.xlsx"
     dataset_name = "Березень_2024_Customs_Declarations"
-    
+
     if not os.path.exists(excel_file_path):
         print(f"Error: Excel file not found at {excel_file_path}")
     else:

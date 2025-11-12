@@ -84,7 +84,7 @@ class LoRATrainerAgent(BaseAgent):
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
         try:
             mlflow.create_experiment(self.experiment_name)
-        except:
+        except Exception:
             pass  # Experiment already exists
 
         logger.info(f"LoRA Trainer Agent initialized: {agent_id}")

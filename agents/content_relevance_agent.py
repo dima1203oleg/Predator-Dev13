@@ -5,7 +5,6 @@ Evaluates and scores content relevance for retrieval-augmented generation
 
 import asyncio
 import logging
-import uuid
 from datetime import datetime
 from typing import Any
 

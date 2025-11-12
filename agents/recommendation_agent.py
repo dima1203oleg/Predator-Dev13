@@ -400,7 +400,7 @@ class RecommendationAgent(BaseAgent):
                                 "confidence": 1.0,  # Could be based on prediction variance
                             }
                         )
-                    except:
+                    except Exception:
                         continue
 
                 # Sort by predicted rating

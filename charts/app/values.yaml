@@ -1,0 +1,25 @@
+image:
+  repository: ghcr.io/example/predator-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+env:
+  DB_URL: postgresql://predator:predator@postgres:5432/predator
+  OPENSEARCH_URL: http://opensearch:9200
+  QDRANT_URL: http://qdrant:6333
+  MINIO_URL: http://minio:9000
+  MINIO_ACCESS_KEY: minio
+  MINIO_SECRET_KEY: minio12345
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { cpu: 500m, memory: 512Mi }
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false

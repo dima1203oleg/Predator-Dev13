@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "api.fullname" . }}
+  labels:
+    app: {{ include "api.name" . }}
+spec:
+  replicas: {{ .Values.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app: {{ include "api.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "api.name" . }}
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources: {{ toYaml .Values.resources | nindent 10 }}
+
+  strategy:
+    canary:
+      steps:
+        - setWeight: 10
+        - pause: { duration: 60 }
+        - setWeight: 50
+        - pause: { duration: 120 }
+        - setWeight: 100
+      maxUnavailable: 1
+  analysis:
+    templates:
+      - name: api-slo-analysis
+        templateName: api-slo-analysis-template
+        args: []
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: api-slo-analysis-template
+spec:
+  metrics:
+    - name: request_error_rate
+      provider:
+        prometheus:
+          address: http://prometheus-operated:9090
+          query: |
+            sum(rate(http_requests_total{endpoint!~"/metrics|/health",status=~"5.."}[5m])) / sum(rate(http_requests_total{endpoint!~"/metrics|/health"}[5m]))
+          failureCondition: 'result > 0.02'
+          successCondition: 'result < 0.01'
+          interval: 30s
+          count: 3
+    - name: p95_latency
+      provider:
+        prometheus:
+          address: http://prometheus-operated:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{endpoint!~"/metrics|/health"}[5m])) by (le))
+          failureCondition: 'result > 0.8'
+          successCondition: 'result < 0.6'
+          interval: 30s
+          count: 3

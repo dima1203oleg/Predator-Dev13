@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "opensearch.fullname" . }}-network-policy
+  labels:
+    app: {{ include "opensearch.name" . }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ include "opensearch.name" . }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: predator-dev
+        - podSelector:
+            matchLabels:
+              app: api
+      ports:
+        - protocol: TCP
+          port: 9200

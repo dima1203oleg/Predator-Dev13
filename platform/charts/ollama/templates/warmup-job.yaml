@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ollama.fullname" . }}-warmup
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: warmup
+          image: curlimages/curl:8.2.1
+          command: ["/bin/sh","-c"]
+          args:
+            - |-
+              set -e
+              echo "Warm-up Ollama: pulling models"
+              # Iterate models defined in values
+              {{- if .Values.models }}
+              MODELS='{{ join "," .Values.models }}'
+              for m in $(echo $MODELS | tr ',' ' '); do
+                echo "Pulling model: $m"
+                # call Ollama admin/pull endpoint (assumes Ollama supports it)
+                curl -s -X POST "http://{{ include "ollama.serviceName" . }}:11434/api/pull" -H 'Content-Type: application/json' -d "{\"model\": \"$m\"}" || true
+                sleep 2
+              done
+              {{- else }}
+              echo "No models configured, skipping"
+              {{- end }}
+      nodeSelector: {{ toYaml .Values.nodeSelector | nindent 6 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
