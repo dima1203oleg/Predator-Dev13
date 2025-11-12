@@ -1,5 +1,5 @@
 # Multi-stage build for Predator Analytics Model Router
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.11.14-slim-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -30,7 +30,7 @@ COPY pyproject.toml ./
 RUN poetry install --only main --no-root --no-interaction && rm -rf $POETRY_CACHE_DIR
 
 # Runtime stage
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.11.14-slim-bookworm AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
