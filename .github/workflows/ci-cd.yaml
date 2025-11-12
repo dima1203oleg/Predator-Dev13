@@ -33,6 +33,20 @@ jobs:
           # upper-bound constraints (eg. pyautogen <3.13) can be installed.
           python-version: '3.11'
 
+      - name: Poetry diagnostics
+        run: |
+          python -V
+          python - <<'PY'
+import tomllib
+data = tomllib.loads(open('pyproject.toml','rb').read())
+pyreq = data.get('tool', {}).get('poetry', {}).get('dependencies', {}).get('python')
+print('pyproject python requirement:', pyreq)
+PY
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry --version || true
+          poetry debug info || true
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
