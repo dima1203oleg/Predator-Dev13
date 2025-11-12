@@ -1,7 +1,7 @@
 """
 Prometheus Configuration for CDC Pipeline Monitoring
 """
-import os
+
 
 # Prometheus configuration
 PROMETHEUS_CONFIG = """
@@ -255,13 +255,16 @@ GRAFANA_DASHBOARD = """
 }
 """
 
+
 def get_prometheus_config() -> str:
     """Get Prometheus configuration"""
     return PROMETHEUS_CONFIG
 
+
 def get_alert_rules() -> str:
     """Get alert rules configuration"""
     return ALERT_RULES
+
 
 def get_grafana_dashboard() -> str:
     """Get Grafana dashboard configuration"""

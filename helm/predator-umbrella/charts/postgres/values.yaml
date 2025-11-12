@@ -31,6 +31,29 @@ postgresql:
       cpu: 500m
       memory: 1024Mi
 
+# Image configuration
+image:
+  repository: bitnami/postgresql
+  tag: "15.4"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  name: ""
+
 # Override global settings if needed
 global:
   postgresql:
@@ -41,3 +64,12 @@ global:
         adminPasswordKey: POSTGRES_PASSWORD
         userPasswordKey: POSTGRES_PASSWORD
         replicationPasswordKey: POSTGRES_REPLICATION_PASSWORD
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *" # Daily at 2 AM
+  image:
+    repository: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
+    tag: ubi8-2.41-0
+  persistence:
+    size: 10Gi # Size for pgBackRest repository

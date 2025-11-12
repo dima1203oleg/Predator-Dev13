@@ -1,8 +1,7 @@
 """
 PostgreSQL Outbox Pattern Implementation
 """
-import os
-from typing import Dict, Any, List
+
 
 # Outbox table schema
 OUTBOX_SCHEMA = """
@@ -92,7 +91,6 @@ CREATE TRIGGER trigger_outbox_customs_data
     AFTER INSERT OR UPDATE OR DELETE ON public.customs_data
     FOR EACH ROW EXECUTE FUNCTION public.outbox_customs_data();
 """,
-
     "companies": """
 CREATE OR REPLACE FUNCTION public.outbox_companies()
 RETURNS TRIGGER AS $$
@@ -131,7 +129,6 @@ CREATE TRIGGER trigger_outbox_companies
     AFTER INSERT OR UPDATE ON public.companies
     FOR EACH ROW EXECUTE FUNCTION public.outbox_companies();
 """,
-
     "hs_codes": """
 CREATE OR REPLACE FUNCTION public.outbox_hs_codes()
 RETURNS TRIGGER AS $$
@@ -161,7 +158,7 @@ DROP TRIGGER IF EXISTS trigger_outbox_hs_codes ON public.hs_codes;
 CREATE TRIGGER trigger_outbox_hs_codes
     AFTER INSERT ON public.hs_codes
     FOR EACH ROW EXECUTE FUNCTION public.outbox_hs_codes();
-"""
+""",
 }
 
 # Outbox processing functions
@@ -239,7 +236,6 @@ OUTBOX_MONITORING = {
         GROUP BY aggregate_type, event_type
         ORDER BY count DESC;
     """,
-
     "processing_stats": """
         SELECT
             processed,
@@ -250,7 +246,6 @@ OUTBOX_MONITORING = {
         FROM public.outbox
         GROUP BY processed;
     """,
-
     "event_lag": """
         SELECT
             EXTRACT(EPOCH FROM (NOW() - MIN(created_at))) as max_lag_seconds,
@@ -258,21 +253,25 @@ OUTBOX_MONITORING = {
         FROM public.outbox
         WHERE processed = FALSE
           AND created_at < NOW() - INTERVAL '1 minute';
-    """
+    """,
 }
+
 
 def get_outbox_schema() -> str:
     """Get outbox table creation SQL"""
     return OUTBOX_SCHEMA
 
-def get_outbox_triggers() -> Dict[str, str]:
+
+def get_outbox_triggers() -> dict[str, str]:
     """Get trigger creation SQL for all tables"""
     return OUTBOX_TRIGGERS
+
 
 def get_outbox_processing() -> str:
     """Get outbox processing functions"""
     return OUTBOX_PROCESSING
 
-def get_monitoring_queries() -> Dict[str, str]:
+
+def get_monitoring_queries() -> dict[str, str]:
     """Get monitoring queries"""
     return OUTBOX_MONITORING

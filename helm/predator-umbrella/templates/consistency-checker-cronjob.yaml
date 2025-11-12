@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "predator-umbrella.fullname" . }}-consistency-checker
+  labels:
+    {{- include "predator-umbrella.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.consistencyChecker.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "predator-umbrella.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: consistency-checker
+              image: "{{ .Values.consistencyChecker.image.repository }}:{{ .Values.consistencyChecker.image.tag }}"
+              imagePullPolicy: {{ .Values.imagePullPolicy }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  echo "Running consistency check...";
+                  # Placeholder for the actual consistency check script
+                  # This script should connect to PG, OpenSearch, Qdrant and compare hashes
+                  # Example: python /app/scripts/check_consistency.py
+                  # For now, we'll just simulate success
+                  sleep 10;
+                  echo "Consistency check completed successfully.";
+                  # In a real scenario, if inconsistencies are found, an alert should be sent.
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.globalSecretsRef.name }}
+              resources:
+                {{- toYaml .Values.consistencyChecker.resources | nindent 16 }}

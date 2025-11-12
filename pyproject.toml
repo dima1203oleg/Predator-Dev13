@@ -36,11 +36,11 @@ cohere = "^4.47"
 google-generativeai = "^0.3.2"
 groq = "^0.4.2"
 langchain = "^0.1.5"
-langchain-community = "^0.0.16"
-langchain-openai = "^0.0.5"
+langchain-community = "^0.0.38"
+langchain-openai = "^0.0.2"
 langgraph = "^0.0.26"
 crewai = {extras = ["tools"], version = "^0.1.27"}
-autogen = "^0.2.16"
+pyautogen = "^0.2.16"
 mlflow = "^2.10.2"
 transformers = "^4.37.2"
 torch = "^2.2.0"
@@ -98,8 +98,10 @@ include = '\.pyi?$'
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
-ignore = ["E501"]
+ignore = ["E501", "N806", "N812"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

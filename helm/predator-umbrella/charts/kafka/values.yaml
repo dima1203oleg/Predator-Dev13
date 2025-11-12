@@ -47,3 +47,26 @@ global:
       secretKeys:
         clientUsersPasswordKey: KAFKA_CLIENT_USERS_PASSWORD
         interBrokerUserPasswordKey: KAFKA_INTER_BROKER_USER_PASSWORD
+
+# Image configuration
+image:
+  repository: nginx
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  name: ""
