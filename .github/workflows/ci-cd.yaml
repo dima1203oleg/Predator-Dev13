@@ -63,21 +63,51 @@ PY
           pip install black
           black --check . || true
 
-      - name: Run tests (unit, headless)
+      - name: Run tests (unit)
         env:
-          # Use provided DATABASE_URL for CI if available; otherwise fall back to in-memory sqlite
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Fallback to sqlite in-memory if DATABASE_URL not provided to avoid starting external DBs
           export DATABASE_URL=${DATABASE_URL:-sqlite:///:memory:}
           pip install pytest pytest-asyncio
-          # Run non-integration tests by default to keep CI lightweight
           pytest -q -k "not integration"
 
-  helm-lint:
-    name: Helm Lint & Template
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
     needs: lint-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  helm-validate:
+    name: Helm Lint & Validate
+    runs-on: ubuntu-latest
+    needs: security-scan
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,14 +115,19 @@ PY
       - name: Set up Helm
         uses: azure/setup-helm@v3
 
+      - name: Install kubeconform
+        run: |
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+
       - name: Helm lint umbrella
         run: |
-          helm lint helm/predator-umbrella
+          helm lint platform/
 
-      - name: Helm template
+      - name: Helm template & kubeconform
         run: |
-          helm template predator helm/predator-umbrella --values helm/predator-umbrella/values.yaml > /tmp/rendered.yaml
-          echo "Rendered at /tmp/rendered.yaml"
+          helm template platform platform/ --values platform/values-dev.yaml | kubeconform -kubernetes-version 1.27.0
 
   build-and-push:
     name: Build & Push Docker images

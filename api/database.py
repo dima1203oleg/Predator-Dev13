@@ -12,15 +12,12 @@ from sqlalchemy.pool import NullPool
 
 # Database URLs
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://predator:predator_secret@localhost:5432/predator_analytics"
+    "DATABASE_URL", "postgresql://predator:predator_secret@localhost:5432/predator_analytics"
 )
 ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 # SQLAlchemy Engine
-engine = create_engine(
-    DATABASE_URL, pool_size=20, max_overflow=40, pool_pre_ping=True, echo=False
-)
+engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=40, pool_pre_ping=True, echo=False)
 
 # Async Engine
 async_engine = create_async_engine(ASYNC_DATABASE_URL, poolclass=NullPool, echo=False)

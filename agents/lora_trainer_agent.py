@@ -41,9 +41,7 @@ class LoRATrainerAgent(BaseAgent):
     Fine-tunes models using LoRA with MLflow tracking and F1≥0.95 threshold
     """
 
-    def __init__(
-        self, agent_id: str = "lora_trainer_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "lora_trainer_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # LoRA training configuration
@@ -84,7 +82,7 @@ class LoRATrainerAgent(BaseAgent):
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
         try:
             mlflow.create_experiment(self.experiment_name)
-        except:
+        except Exception:
             pass  # Experiment already exists
 
         logger.info(f"LoRA Trainer Agent initialized: {agent_id}")
@@ -673,9 +671,7 @@ class LoRATrainerAgent(BaseAgent):
                 test_labels = test_df["label"].tolist()
 
                 # Tokenize
-                tokenizer(
-                    test_texts, truncation=True, padding=True, return_tensors="pt"
-                )
+                tokenizer(test_texts, truncation=True, padding=True, return_tensors="pt")
 
                 # Create test dataset
                 test_dataset = TextClassificationDataset(test_texts, test_labels)

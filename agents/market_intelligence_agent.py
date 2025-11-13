@@ -673,7 +673,9 @@ class MarketIntelligenceAgent(BaseAgent):
                 "sentiment": (
                     "positive"
                     if blob.sentiment.polarity > 0.1
-                    else "negative" if blob.sentiment.polarity < -0.1 else "neutral"
+                    else "negative"
+                    if blob.sentiment.polarity < -0.1
+                    else "neutral"
                 ),
             }
 
@@ -708,7 +710,9 @@ class MarketIntelligenceAgent(BaseAgent):
                     "sentiment": (
                         "bullish"
                         if overall_sentiment > 0.1
-                        else "bearish" if overall_sentiment < -0.1 else "neutral"
+                        else "bearish"
+                        if overall_sentiment < -0.1
+                        else "neutral"
                     ),
                     "sources_count": len(all_sentiment),
                     "analyzed_at": datetime.now(),
@@ -1078,7 +1082,9 @@ class MarketIntelligenceAgent(BaseAgent):
                             "performance": (
                                 "outperforming"
                                 if return_pct > 5
-                                else "underperforming" if return_pct < -5 else "neutral"
+                                else "underperforming"
+                                if return_pct < -5
+                                else "neutral"
                             ),
                         }
 
@@ -1530,7 +1536,9 @@ class MarketIntelligenceAgent(BaseAgent):
                     else (
                         "neutral"
                         if avg_polarity > -0.1
-                        else "negative" if avg_polarity > -0.3 else "very_negative"
+                        else "negative"
+                        if avg_polarity > -0.3
+                        else "very_negative"
                     )
                 )
             )

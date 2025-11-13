@@ -26,9 +26,7 @@ class DocumentationAgent(BaseAgent):
     Handles API docs, code docs, user guides, and technical documentation
     """
 
-    def __init__(
-        self, agent_id: str = "documentation_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "documentation_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Documentation configuration

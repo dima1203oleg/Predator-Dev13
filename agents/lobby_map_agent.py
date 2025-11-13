@@ -5,8 +5,6 @@ Uses graph algorithms to detect lobbying networks and influence patterns
 
 import asyncio
 import logging
-import uuid
-from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 
@@ -26,13 +24,20 @@ class LobbyMapAgent(BaseAgent):
     Detects lobbying patterns, influence networks, and connected entities
     """
 
-    def __init__(self, name: str = "lobby_map_agent", model_registry_path: str = "agents/model_registry.yaml", max_retries: int = 3, timeout: int = 60, enable_metrics: bool = True):
+    def __init__(
+        self,
+        name: str = "lobby_map_agent",
+        model_registry_path: str = "agents/model_registry.yaml",
+        max_retries: int = 3,
+        timeout: int = 60,
+        enable_metrics: bool = True,
+    ):
         super().__init__(name, model_registry_path, max_retries, timeout, enable_metrics)
 
         # Network analysis settings
-        self.min_relationship_strength = 0.1 # Default, can be configured via model_registry.yaml
-        self.max_network_depth = 3 # Default
-        self.influence_threshold = 0.7 # Default
+        self.min_relationship_strength = 0.1  # Default, can be configured via model_registry.yaml
+        self.max_network_depth = 3  # Default
+        self.influence_threshold = 0.7  # Default
 
         # Graph settings
         self.graph_update_frequency = 24  # hours
@@ -49,7 +54,9 @@ class LobbyMapAgent(BaseAgent):
         Agent implementation for lobby map analysis.
         The context query should specify the type of analysis.
         """
-        message_type = context.metadata.get("type", "lobby_network_analysis") # Default to network analysis
+        message_type = context.metadata.get(
+            "type", "lobby_network_analysis"
+        )  # Default to network analysis
 
         if message_type == "lobby_network_analysis":
             return await self._perform_network_analysis(context)
@@ -64,9 +71,7 @@ class LobbyMapAgent(BaseAgent):
         else:
             raise ValueError(f"Unknown analysis type: {message_type}")
 
-    async def _perform_network_analysis(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_network_analysis(self, context: AgentContext) -> dict[str, Any]:
         """
         Handle network analysis request
         """
@@ -106,7 +111,6 @@ class LobbyMapAgent(BaseAgent):
                 or (datetime.now() - self.last_graph_update).total_seconds() / 3600
                 > self.graph_update_frequency
             ):
-
                 await self._build_relationship_graph()
                 self.last_graph_update = datetime.now()
                 logger.info("Relationship graph updated")
@@ -242,7 +246,7 @@ class LobbyMapAgent(BaseAgent):
 
         except Exception as e:
             logger.error(f"Relationship data retrieval failed: {e}")
-            raise # Re-raise exception to be caught by BaseAgent's execute method
+            raise  # Re-raise exception to be caught by BaseAgent's execute method
 
     async def _get_company_info(self, company_id: str) -> dict[str, Any]:
         """
@@ -266,11 +270,9 @@ class LobbyMapAgent(BaseAgent):
 
                     return {
                         "name": entity.name,
-                        "entity_type": entity.entity_type, # Changed activity_type to entity_type
-                        "created_at": ( # Changed registration_date to created_at
-                            entity.created_at.isoformat()
-                            if entity.created_at
-                            else None
+                        "entity_type": entity.entity_type,  # Changed activity_type to entity_type
+                        "created_at": (  # Changed registration_date to created_at
+                            entity.created_at.isoformat() if entity.created_at else None
                         ),
                         "total_value_usd": total_value,
                         "total_quantity": total_quantity,
@@ -281,7 +283,7 @@ class LobbyMapAgent(BaseAgent):
 
         except Exception as e:
             logger.error(f"Entity info retrieval failed: {e}")
-            raise # Re-raise exception
+            raise  # Re-raise exception
 
     async def _analyze_company_network(
         self, company_id: str, depth: int, include_indirect: bool
@@ -525,9 +527,7 @@ class LobbyMapAgent(BaseAgent):
             logger.error(f"Risk assessment failed: {e}")
             return {"error": str(e)}
 
-    async def _perform_influence_mapping(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_influence_mapping(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform influence mapping request
         """
@@ -574,7 +574,9 @@ class LobbyMapAgent(BaseAgent):
             sector_nodes = []
             if target_sector:
                 for node, node_data in self.influence_graph.nodes(data=True):
-                    if node_data.get("entity_type") == target_sector: # Changed activity_type to entity_type
+                    if (
+                        node_data.get("entity_type") == target_sector
+                    ):  # Changed activity_type to entity_type
                         sector_nodes.append(node)
             else:
                 sector_nodes = list(self.influence_graph.nodes())
@@ -586,7 +588,7 @@ class LobbyMapAgent(BaseAgent):
             sector_graph = self.influence_graph.subgraph(sector_nodes)
 
             # Calculate influence metrics
-            _ = dict(sector_graph.in_degree()) # Unused variable
+            _ = dict(sector_graph.in_degree())  # Unused variable
             out_degree = dict(sector_graph.out_degree())
 
             # Find key influencers (high out-degree)
@@ -594,9 +596,7 @@ class LobbyMapAgent(BaseAgent):
                 [(node, out_degree.get(node, 0)) for node in sector_nodes],
                 key=lambda x: x[1],
                 reverse=True,
-            )[
-                :10
-            ]  # Top 10
+            )[:10]  # Top 10
 
             influence_map["key_influencers"] = [
                 {
@@ -693,9 +693,7 @@ class LobbyMapAgent(BaseAgent):
         except Exception:
             return 0.0
 
-    async def _perform_company_relationships(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_company_relationships(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform company relationships query
         """
@@ -775,9 +773,7 @@ class LobbyMapAgent(BaseAgent):
             logger.error(f"Relationship analysis failed: {e}")
             raise
 
-    async def _perform_lobby_detection(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_lobby_detection(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform lobby detection request
         """
@@ -850,7 +846,7 @@ class LobbyMapAgent(BaseAgent):
         try:
             clusters = []
 
-            async for session in get_async_db(): # Changed get_db_session to get_async_db
+            async for session in get_async_db():  # Changed get_db_session to get_async_db
                 # Find HS codes with many companies
                 hs_cluster_query = """
                 SELECT
@@ -918,9 +914,7 @@ class LobbyMapAgent(BaseAgent):
             logger.error(f"Influence concentration analysis failed: {e}")
             raise
 
-    async def _perform_graph_update(
-        self, context: AgentContext
-    ) -> dict[str, Any]:
+    async def _perform_graph_update(self, context: AgentContext) -> dict[str, Any]:
         """
         Perform graph update request
         """
@@ -955,7 +949,7 @@ if __name__ == "__main__":
             query="update graph",
             session_id="test_session",
             trace_id="test_trace",
-            metadata={"type": "graph_update"}
+            metadata={"type": "graph_update"},
         )
 
         print("Testing lobby map agent (graph update)...")
@@ -975,7 +969,7 @@ if __name__ == "__main__":
             query="analyze network for company_123",
             session_id="test_session",
             trace_id="test_trace",
-            metadata={"type": "lobby_network_analysis", "company_id": "company_123"}
+            metadata={"type": "lobby_network_analysis", "company_id": "company_123"},
         )
 
         print("\nTesting lobby map agent (network analysis)...")
@@ -986,7 +980,6 @@ if __name__ == "__main__":
                 print(f"Network analysis for company_123: {response.get('analysis')}")
         except Exception as e:
             print(f"Network analysis failed: {e}")
-
 
     # Run test
     asyncio.run(test_lobby_map_agent())

@@ -635,7 +635,7 @@ metadata:
 spec:
   appinfo:
     appns: default
-    applabel: "app in ({','.join(targets)})"
+    applabel: "app in ({",".join(targets)})"
   chaosServiceAccount: litmus-admin
   experiments:
   - name: network-chaos

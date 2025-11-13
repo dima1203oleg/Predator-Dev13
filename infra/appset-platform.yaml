@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: predator-dev
+            domain: dev.predator.example.com
+            valuesFile: values-dev.yaml
+          - env: stage
+            namespace: predator-stage
+            domain: stage.predator.example.com
+            valuesFile: values-stage.yaml
+          - env: prod
+            namespace: predator-prod
+            domain: prod.predator.example.com
+            valuesFile: values-prod.yaml
+  template:
+    metadata:
+      name: "platform-{{env}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/dima1203oleg/predator-gitops # Adjust to actual gitops repo
+        targetRevision: HEAD
+        path: platform
+        helm:
+          valueFiles:
+            - "{{valuesFile}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

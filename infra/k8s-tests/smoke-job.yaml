@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: predator-smoke-e2e
+  namespace: predator-dev
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke
+          image: curlimages/curl:8.2.1
+          env:
+            - name: API_HOST
+              value: "http://uploader.dev.predator.example.com"
+            - name: MINIO_URL
+              value: "http://minio:9000"
+            - name: TEST_FILE_URL
+              value: "https://raw.githubusercontent.com/dima1203oleg/predator-samples/main/test-small.xlsx"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |-
+              set -e
+              echo "[SMOKE] Checking API health..."
+              curl -sf "$API_HOST/healthz"
+              echo "Downloading test Excel"
+              curl -sSfL "$TEST_FILE_URL" -o /tmp/test.xlsx
+              echo "Uploading to API"
+              STATUS=$(curl -s -w "%{http_code}" -o /tmp/resp.json -X POST "$API_HOST/upload" -F "file=@/tmp/test.xlsx")
+              echo "Status code: $STATUS"
+              cat /tmp/resp.json
+              if [ "$STATUS" -ne 200 ]; then
+                echo "Upload failed"
+                exit 2
+              fi
+              echo "[SMOKE] Checking Qdrant..."
+              curl -sf http://qdrant:6333/collections
+              echo "[SMOKE] Checking OpenSearch..."
+              curl -sf http://opensearch:9200/_cluster/health
+              echo "[SMOKE] All checks passed."
+      nodeSelector:
+        pool: cpu

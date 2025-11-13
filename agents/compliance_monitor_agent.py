@@ -1638,9 +1638,9 @@ class ComplianceMonitorAgent(BaseAgent):
                     )
 
                     # Update monitoring state
-                    self.monitoring_state["compliance_status"][
-                        f"{framework}_{domain}"
-                    ] = check_result
+                    self.monitoring_state["compliance_status"][f"{framework}_{domain}"] = (
+                        check_result
+                    )
 
                     # Check for violations that need alerts
                     violations = check_result.get("violations_found", [])

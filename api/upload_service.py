@@ -3,16 +3,17 @@ Upload Service: Multi-Database Indexing
 Автоматично індексує дані у всі бази даних без дублювання
 """
 
+import logging
 import os
 import time
-import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any
 
-from sqlalchemy.orm import Session
-from opensearchpy import OpenSearch, helpers as opensearch_helpers
-from neo4j import GraphDatabase
 import redis
+from neo4j import GraphDatabase
+from opensearchpy import OpenSearch
+from opensearchpy import helpers as opensearch_helpers
+from sqlalchemy.orm import Session
 
 from api.models import Dataset, Record
 from api.qdrant_manager import QdrantManager
@@ -25,29 +26,25 @@ class MultiDatabaseUploadService:
     """Сервіс для завантаження та індексації у всі БД"""
 
     def __init__(self):
-        self.stats = {
-            "postgresql": 0,
-            "opensearch": 0,
-            "qdrant": 0,
-            "neo4j": 0,
-            "redis": 0
-        }
+        self.stats = {"postgresql": 0, "opensearch": 0, "qdrant": 0, "neo4j": 0, "redis": 0}
 
     def init_opensearch(self) -> OpenSearch:
         """Ініціалізує з'єднання з OpenSearch"""
         client = OpenSearch(
-            hosts=[{
-                "host": os.getenv("OPENSEARCH_HOST", "localhost"),
-                "port": int(os.getenv("OPENSEARCH_PORT", "9200"))
-            }],
+            hosts=[
+                {
+                    "host": os.getenv("OPENSEARCH_HOST", "localhost"),
+                    "port": int(os.getenv("OPENSEARCH_PORT", "9200")),
+                }
+            ],
             http_auth=(
                 os.getenv("OPENSEARCH_USER", "admin"),
-                os.getenv("OPENSEARCH_PASSWORD", "admin")
+                os.getenv("OPENSEARCH_PASSWORD", "admin"),
             ),
             use_ssl=False,
             verify_certs=False,
             ssl_show_warn=False,
-            timeout=30
+            timeout=30,
         )
 
         # Ensure index exists
@@ -57,13 +54,8 @@ class MultiDatabaseUploadService:
                     "number_of_shards": 2,
                     "number_of_replicas": 1,
                     "analysis": {
-                        "analyzer": {
-                            "ukrainian": {
-                                "type": "standard",
-                                "stopwords": "_ukrainian_"
-                            }
-                        }
-                    }
+                        "analyzer": {"ukrainian": {"type": "standard", "stopwords": "_ukrainian_"}}
+                    },
                 },
                 "mappings": {
                     "properties": {
@@ -78,17 +70,17 @@ class MultiDatabaseUploadService:
                         "company_name": {
                             "type": "text",
                             "analyzer": "ukrainian",
-                            "fields": {"keyword": {"type": "keyword", "ignore_above": 256}}
+                            "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
                         },
                         "customs_office": {
                             "type": "text",
                             "analyzer": "ukrainian",
-                            "fields": {"keyword": {"type": "keyword", "ignore_above": 256}}
+                            "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
                         },
                         "full_text": {"type": "text", "analyzer": "ukrainian"},
-                        "indexed_at": {"type": "date"}
+                        "indexed_at": {"type": "date"},
                     }
-                }
+                },
             }
             client.indices.create(index="customs_records", body=index_body)
             logger.info("✅ Created OpenSearch index: customs_records")
@@ -102,15 +94,11 @@ class MultiDatabaseUploadService:
         manager = QdrantManager(
             host=os.getenv("QDRANT_HOST", "localhost"),
             port=int(os.getenv("QDRANT_PORT", "6333")),
-            collection_name="customs_records_v1"
+            collection_name="customs_records_v1",
         )
 
         try:
-            manager.create_collection(
-                vector_size=768,
-                distance=Distance.COSINE,
-                recreate=False
-            )
+            manager.create_collection(vector_size=768, distance=Distance.COSINE, recreate=False)
             logger.info("✅ Qdrant collection ready")
         except Exception as e:
             logger.warning(f"Qdrant collection exists or error: {e}")
@@ -121,20 +109,13 @@ class MultiDatabaseUploadService:
         """Ініціалізує Neo4j"""
         driver = GraphDatabase.driver(
             os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-            auth=(
-                os.getenv("NEO4J_USER", "neo4j"),
-                os.getenv("NEO4J_PASSWORD", "password")
-            )
+            auth=(os.getenv("NEO4J_USER", "neo4j"), os.getenv("NEO4J_PASSWORD", "password")),
         )
 
         # Create indexes
         with driver.session() as session:
-            session.run(
-                "CREATE INDEX company_edrpou IF NOT EXISTS FOR (c:Company) ON (c.edrpou)"
-            )
-            session.run(
-                "CREATE INDEX product_hs_code IF NOT EXISTS FOR (p:Product) ON (p.hs_code)"
-            )
+            session.run("CREATE INDEX company_edrpou IF NOT EXISTS FOR (c:Company) ON (c.edrpou)")
+            session.run("CREATE INDEX product_hs_code IF NOT EXISTS FOR (p:Product) ON (p.hs_code)")
             session.run("CREATE INDEX country_code IF NOT EXISTS FOR (c:Country) ON (c.code)")
 
         logger.info("✅ Neo4j indexes ensured")
@@ -146,20 +127,15 @@ class MultiDatabaseUploadService:
             host=os.getenv("REDIS_HOST", "localhost"),
             port=int(os.getenv("REDIS_PORT", "6379")),
             db=0,
-            decode_responses=True
+            decode_responses=True,
         )
         client.ping()
         logger.info("✅ Redis connection ready")
         return client
 
     async def process_upload(
-        self,
-        file_path: str,
-        filename: str,
-        dataset_name: str,
-        owner: str,
-        db: Session
-    ) -> Dict[str, Any]:
+        self, file_path: str, filename: str, dataset_name: str, owner: str, db: Session
+    ) -> dict[str, Any]:
         """
         Головний метод обробки завантаження
 
@@ -175,7 +151,7 @@ class MultiDatabaseUploadService:
             "failed": 0,
             "databases_indexed": {},
             "processing_time": 0.0,
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -193,7 +169,7 @@ class MultiDatabaseUploadService:
                 description=f"Customs data from {filename}",
                 schema_json={},
                 owner=owner,
-                status="active"
+                status="active",
             )
             db.add(dataset)
             db.commit()
@@ -208,9 +184,11 @@ class MultiDatabaseUploadService:
             for record_data in records_data:
                 try:
                     # Check duplicates by op_hash
-                    existing = db.query(Record).filter(
-                        Record.op_hash == record_data.get("op_hash")
-                    ).first()
+                    existing = (
+                        db.query(Record)
+                        .filter(Record.op_hash == record_data.get("op_hash"))
+                        .first()
+                    )
 
                     if existing:
                         result["duplicates"] += 1
@@ -230,8 +208,9 @@ class MultiDatabaseUploadService:
                         customs_office=record_data.get("customs_office"),
                         attrs=record_data,
                         source_file=filename,
-                        source_row=int(record_data["pk"].split('_')[-1])
-                        if '_' in record_data["pk"] else 0
+                        source_row=int(record_data["pk"].split("_")[-1])
+                        if "_" in record_data["pk"]
+                        else 0,
                     )
 
                     db.add(record)
@@ -320,11 +299,12 @@ class MultiDatabaseUploadService:
             logger.error(f"Upload failed: {e}")
             result["errors"].append(str(e))
             import traceback
+
             traceback.print_exc()
 
         return result
 
-    async def index_to_opensearch(self, client: OpenSearch, records: List[Record]) -> int:
+    async def index_to_opensearch(self, client: OpenSearch, records: list[Record]) -> int:
         """Індексує записи у OpenSearch"""
         if not records:
             return 0
@@ -332,13 +312,18 @@ class MultiDatabaseUploadService:
         actions = []
         for record in records:
             # Повнотекстовий контент для пошуку
-            full_text = " ".join(filter(None, [
-                record.company_name,
-                record.hs_code,
-                record.customs_office,
-                record.edrpou,
-                record.country_code
-            ]))
+            full_text = " ".join(
+                filter(
+                    None,
+                    [
+                        record.company_name,
+                        record.hs_code,
+                        record.customs_office,
+                        record.edrpou,
+                        record.country_code,
+                    ],
+                )
+            )
 
             action = {
                 "_index": "customs_records",
@@ -355,8 +340,8 @@ class MultiDatabaseUploadService:
                     "company_name": record.company_name,
                     "customs_office": record.customs_office,
                     "full_text": full_text,
-                    "indexed_at": datetime.now().isoformat()
-                }
+                    "indexed_at": datetime.now().isoformat(),
+                },
             }
             actions.append(action)
 
@@ -368,7 +353,7 @@ class MultiDatabaseUploadService:
 
         return success
 
-    async def index_to_qdrant(self, manager: QdrantManager, records: List[Record]) -> int:
+    async def index_to_qdrant(self, manager: QdrantManager, records: list[Record]) -> int:
         """Індексує записи у Qdrant (векторний пошук)"""
         if not records:
             return 0
@@ -378,7 +363,7 @@ class MultiDatabaseUploadService:
         logger.info("⚠️ Qdrant indexing requires Ollama embeddings - skipped for now")
         return 0
 
-    async def index_to_neo4j(self, driver, records: List[Record]) -> int:
+    async def index_to_neo4j(self, driver, records: list[Record]) -> int:
         """Індексує записи у Neo4j (графові зв'язки)"""
         if not records:
             return 0
@@ -388,11 +373,12 @@ class MultiDatabaseUploadService:
 
         with driver.session() as session:
             for i in range(0, len(records), batch_size):
-                batch = records[i:i + batch_size]
+                batch = records[i : i + batch_size]
 
                 for record in batch:
                     try:
-                        session.run("""
+                        session.run(
+                            """
                             MERGE (c:Company {edrpou: $edrpou})
                             ON CREATE SET c.name = $company_name
                             ON MATCH SET c.name = $company_name
@@ -407,16 +393,18 @@ class MultiDatabaseUploadService:
                                 r.date = date($date)
 
                             MERGE (p)-[:FROM_COUNTRY]->(co)
-                        """, {
-                            "edrpou": record.edrpou or "UNKNOWN",
-                            "company_name": record.company_name or "Unknown Company",
-                            "hs_code": record.hs_code or "0000",
-                            "country_code": record.country_code or "XX",
-                            "amount": float(record.amount) if record.amount else 0.0,
-                            "qty": float(record.qty) if record.qty else 0.0,
-                            "date": record.date.isoformat() if record.date else "2024-01-01",
-                            "record_id": str(record.id)
-                        })
+                        """,
+                            {
+                                "edrpou": record.edrpou or "UNKNOWN",
+                                "company_name": record.company_name or "Unknown Company",
+                                "hs_code": record.hs_code or "0000",
+                                "country_code": record.country_code or "XX",
+                                "amount": float(record.amount) if record.amount else 0.0,
+                                "qty": float(record.qty) if record.qty else 0.0,
+                                "date": record.date.isoformat() if record.date else "2024-01-01",
+                                "record_id": str(record.id),
+                            },
+                        )
                         indexed += 1
                     except Exception as e:
                         logger.error(f"Neo4j error for record {record.id}: {e}")
@@ -427,7 +415,7 @@ class MultiDatabaseUploadService:
         logger.info(f"✅ Neo4j: indexed {indexed} graph relationships")
         return indexed
 
-    async def cache_to_redis(self, client: redis.Redis, records: List[Record]) -> int:
+    async def cache_to_redis(self, client: redis.Redis, records: list[Record]) -> int:
         """Кешує статистику у Redis"""
         if not records:
             return 0

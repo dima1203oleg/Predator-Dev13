@@ -2,7 +2,6 @@
 Docker Compose for CDC Pipeline
 """
 
-
 # Docker Compose configuration for CDC components
 DOCKER_COMPOSE_CDC = """
 version: '3.8'

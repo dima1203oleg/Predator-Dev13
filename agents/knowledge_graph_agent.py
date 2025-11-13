@@ -1212,7 +1212,7 @@ class KnowledgeGraphAgent(BaseAgent):
 
             # Generate insights based on path
             if len(path) >= 3:
-                analysis["insights"].append(f"Found {len(path)-2} intermediate connections")
+                analysis["insights"].append(f"Found {len(path) - 2} intermediate connections")
 
             return analysis
 

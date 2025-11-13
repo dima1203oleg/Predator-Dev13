@@ -1,0 +1,59 @@
+{
+  "name": "Predator v13 (Remote K8s Dev, Py3.11)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "hostRequirements": { "cpus": 2, "memory": "4gb", "storage": "16gb" },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {}
+  },
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": true,
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+    "source=${env:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached,ro",
+    "source=${env:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached,ro"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "github.vscode-github-actions",
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml",
+        "ms-vscode.makefile-tools",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "python.formatting.provider": "ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": true,
+          "source.organizeImports": true
+        },
+        "yaml.schemas": {
+          "kubernetes": "k8s/**/*.yaml",
+          "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml",
+          "https://json.schemastore.org/devcontainer.json": ".devcontainer/devcontainer.json"
+        },
+        "files.watcherExclude": {
+          "**/.venv/**": true,
+          "**/__pycache__/**": true
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "onCreateCommand": "git config --global --add safe.directory /workspaces/${localWorkspaceFolderBasename}",
+  "postCreateCommand": "bash -lc 'python -m pip install -U pip && pip install -r requirements-dev.txt && pre-commit install && curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64 && chmod +x /usr/local/bin/argocd && curl -sSL -o /usr/local/bin/kubectl https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl && curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && curl -sSL -o /usr/local/bin/kustomize https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/kustomize/v5.4.1/kustomize_linux_amd64 && chmod +x /usr/local/bin/kustomize && curl -sSLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && chmod +x /usr/local/bin/yq && curl -sSLo /usr/local/bin/cosign https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 && chmod +x /usr/local/bin/cosign || true'",
+  "postStartCommand": "bash -lc 'git lfs install || true; printf \"\\n=== REMOTE-K8S DEVCONTAINER ===\\nThis DevContainer is configured as a thin remote client: DO NOT start or deploy cluster services locally on this machine.\\nKUBECONFIG is mounted read-only from your host and should point to a remote cluster.\\nIf you need to run heavy components, use the remote Kubernetes cluster only.\\n=== END ===\\n\"; if command -v docker >/dev/null 2>&1; then printf \"Warning: docker CLI is available - avoid starting local daemons (docker-desktop/minikube).\\n\"; fi'"
+}

@@ -1,0 +1,42 @@
+# Alertmanager rules for Predator Analytics
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: predator-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: predator.rules
+      rules:
+        - alert: HighErrorRate
+          expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High error rate detected (>5%)"
+            description: "Service {{ $labels.job }} is returning 5xx errors >5% for 5m."
+        - alert: HighLatency
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p95 latency (>0.8s)"
+            description: "Service {{ $labels.job }} p95 latency >0.8s for 5m."
+        - alert: CDCLagHigh
+          expr: max(cdc_lag_seconds) > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CDC lag high (>100s)"
+            description: "CDC lag is above 100 seconds for 10m."
+        - alert: QueueGrowing
+          expr: sum(queue_length) > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Queue length growing (>100)"
+            description: "Queue length is above 100 for 10m."

@@ -6,12 +6,12 @@ Analyzes text sentiment, emotions, and linguistic patterns using ML and rule-bas
 import asyncio
 import logging
 import re
-import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
 import lightgbm as lgb
+import nltk
 import numpy as np
 import spacy
 import xgboost as xgb
@@ -46,13 +46,18 @@ class SentimentAnalyzerAgent(BaseAgent):
     """
 
     def __init__(
-        self, name: str = "sentiment_analyzer_agent", model_registry_path: str = "agents/model_registry.yaml", max_retries: int = 3, timeout: int = 60, enable_metrics: bool = True
+        self,
+        name: str = "sentiment_analyzer_agent",
+        model_registry_path: str = "agents/model_registry.yaml",
+        max_retries: int = 3,
+        timeout: int = 60,
+        enable_metrics: bool = True,
     ):
         super().__init__(name, model_registry_path, max_retries, timeout, enable_metrics)
 
         # Sentiment analysis configuration
         self.sentiment_config = {
-            "analysis_methods": self.model_config.get( # Use model_config
+            "analysis_methods": self.model_config.get(  # Use model_config
                 "analysis_methods",
                 [
                     "rule_based",
@@ -64,20 +69,22 @@ class SentimentAnalyzerAgent(BaseAgent):
                     "contextual_analysis",
                 ],
             ),
-            "supported_languages": self.model_config.get( # Use model_config
+            "supported_languages": self.model_config.get(  # Use model_config
                 "supported_languages", ["en", "uk", "ru", "de", "fr", "es", "it", "pt", "zh", "ja"]
             ),
-            "sentiment_classes": self.model_config.get( # Use model_config
+            "sentiment_classes": self.model_config.get(  # Use model_config
                 "sentiment_classes",
                 ["very_negative", "negative", "neutral", "positive", "very_positive"],
             ),
-            "emotion_classes": self.model_config.get( # Use model_config
+            "emotion_classes": self.model_config.get(  # Use model_config
                 "emotion_classes",
                 ["joy", "sadness", "anger", "fear", "surprise", "disgust", "trust", "anticipation"],
             ),
-            "confidence_threshold": self.model_config.get("confidence_threshold", 0.6), # Use model_config
-            "batch_size": self.model_config.get("batch_size", 32), # Use model_config
-            "max_text_length": self.model_config.get("max_text_length", 512), # Use model_config
+            "confidence_threshold": self.model_config.get(
+                "confidence_threshold", 0.6
+            ),  # Use model_config
+            "batch_size": self.model_config.get("batch_size", 32),  # Use model_config
+            "max_text_length": self.model_config.get("max_text_length", 512),  # Use model_config
         }
 
         # NLP models and pipelines
@@ -124,7 +131,9 @@ class SentimentAnalyzerAgent(BaseAgent):
         if not self.nlp_tools or not self.sentiment_models or not self.transformer_pipelines:
             await self.initialize()
 
-        message_type = context.metadata.get("type", "analyze_sentiment") # Default to sentiment analysis
+        message_type = context.metadata.get(
+            "type", "analyze_sentiment"
+        )  # Default to sentiment analysis
 
         if message_type == "analyze_sentiment":
             return await self._perform_sentiment_analysis(context)
@@ -208,7 +217,6 @@ class SentimentAnalyzerAgent(BaseAgent):
                 # Placeholder for fitting scaler/encoder if models were trained
                 # self.scalers[model_name].fit(training_features)
                 # self.label_encoders[model_name].fit(training_labels)
-
 
             for model_name in self.emotion_models:
                 self.scalers[model_name] = StandardScaler()
@@ -507,7 +515,7 @@ class SentimentAnalyzerAgent(BaseAgent):
             # Extract features
             features = self._extract_sentiment_features(text)
 
-            if features is None: # Check for None explicitly
+            if features is None:  # Check for None explicitly
                 return {"error": "Feature extraction failed"}
 
             features_array = np.array([features])
@@ -517,7 +525,7 @@ class SentimentAnalyzerAgent(BaseAgent):
             for model_name, model in self.sentiment_models.items():
                 try:
                     scaler = self.scalers.get(model_name)
-                    if scaler and hasattr(scaler, 'transform'): # Check if scaler is fitted
+                    if scaler and hasattr(scaler, "transform"):  # Check if scaler is fitted
                         scaled_features = scaler.transform(features_array)
                         probs = model.predict_proba(scaled_features)[0]
 
@@ -536,7 +544,9 @@ class SentimentAnalyzerAgent(BaseAgent):
                             "confidence": float(probs[sentiment_idx]),
                         }
                     else:
-                        logger.warning(f"Scaler for {model_name} not fitted. Skipping ML prediction.")
+                        logger.warning(
+                            f"Scaler for {model_name} not fitted. Skipping ML prediction."
+                        )
 
                 except Exception as e:
                     logger.error(f"ML model prediction failed for {model_name}: {e}")
@@ -1109,7 +1119,9 @@ class SentimentAnalyzerAgent(BaseAgent):
                 "readability_level": (
                     "easy"
                     if flesch_score > 60
-                    else "standard" if flesch_score > 30 else "difficult"
+                    else "standard"
+                    if flesch_score > 30
+                    else "difficult"
                 ),
             }
 
@@ -1306,7 +1318,9 @@ class SentimentAnalyzerAgent(BaseAgent):
                 raise ValueError("Text content required for linguistic analysis")
 
             # Perform linguistic analysis
-            linguistic_analysis = self._perform_linguistic_analysis_impl(text) # Renamed to avoid recursion
+            linguistic_analysis = self._perform_linguistic_analysis_impl(
+                text
+            )  # Renamed to avoid recursion
 
             return {
                 "type": "linguistic_analysis_response",
@@ -1318,7 +1332,7 @@ class SentimentAnalyzerAgent(BaseAgent):
             logger.error(f"Linguistic analysis handling failed: {e}")
             raise
 
-    def _perform_linguistic_analysis_impl(self, text: str) -> dict[str, Any]: # Renamed
+    def _perform_linguistic_analysis_impl(self, text: str) -> dict[str, Any]:  # Renamed
         """
         Perform detailed linguistic analysis
         """
@@ -2025,7 +2039,7 @@ if __name__ == "__main__":
     async def test_sentiment_analyzer_agent():
         # Initialize sentiment analyzer agent
         agent = SentimentAnalyzerAgent()
-        await agent.initialize() # Call initialize explicitly
+        await agent.initialize()  # Call initialize explicitly
 
         # Test context for sentiment analysis
         ctx_sentiment_analysis = AgentContext(
@@ -2080,7 +2094,10 @@ if __name__ == "__main__":
             query="perform text analysis",
             session_id="test_session",
             trace_id="test_trace",
-            metadata={"type": "analyze_text", "text": "This is a sample text for comprehensive analysis."},
+            metadata={
+                "type": "analyze_text",
+                "text": "This is a sample text for comprehensive analysis.",
+            },
         )
 
         print("\nTesting sentiment analyzer agent (text analysis)...")

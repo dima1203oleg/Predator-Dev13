@@ -26,9 +26,7 @@ class QueryPlannerAgent(BaseAgent):
     Uses LangGraph to coordinate complex multi-agent workflows
     """
 
-    def __init__(
-        self, agent_id: str = "query_planner_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "query_planner_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # LangGraph setup
@@ -925,9 +923,7 @@ class QueryPlannerAgent(BaseAgent):
                     sum(p["execution_time"] for p in successful_executions) / len(
                         successful_executions
                     )
-                    sum(p["confidence"] for p in successful_executions) / len(
-                        successful_executions
-                    )
+                    sum(p["confidence"] for p in successful_executions) / len(successful_executions)
 
                     # Adjust timeouts based on historical performance
                     stages = optimized_plan.get("stages", [])

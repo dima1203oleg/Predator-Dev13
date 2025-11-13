@@ -361,7 +361,9 @@ class SpeechRecognitionAgent(BaseAgent):
 
                 # Transcribe
                 result = whisper_model.transcribe(
-                    audio_array, language=language, fp16=False  # Disable FP16 for CPU
+                    audio_array,
+                    language=language,
+                    fp16=False,  # Disable FP16 for CPU
                 )
 
                 transcription_result = {
@@ -1040,7 +1042,7 @@ class SpeechRecognitionAgent(BaseAgent):
                             wav_file.readframes(wav_file.getnframes()), dtype=np.int16
                         )
                         audio_array = audio_array.astype(np.float32) / 32768.0
-                except:
+                except Exception:
                     # Try loading with librosa (supports more formats)
                     audio_buffer = io.BytesIO(audio_bytes)
                     audio_array, sample_rate = librosa.load(audio_buffer, sr=None)

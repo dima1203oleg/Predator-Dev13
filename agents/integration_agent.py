@@ -23,9 +23,7 @@ class IntegrationAgent(BaseAgent):
     Handles API orchestration, data flow management, and system integrations
     """
 
-    def __init__(
-        self, agent_id: str = "integration_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "integration_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Integration configuration

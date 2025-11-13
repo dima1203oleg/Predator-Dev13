@@ -31,9 +31,7 @@ class DataQualityAgent(BaseAgent):
     Uses statistical methods, ML models, and rule-based validation
     """
 
-    def __init__(
-        self, agent_id: str = "data_quality_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "data_quality_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Data quality configuration
@@ -1106,7 +1104,7 @@ class DataQualityAgent(BaseAgent):
                     try:
                         pd.to_datetime(df[col].dropna().head(10))
                         date_formats.append("consistent")
-                    except:
+                    except Exception:
                         date_formats.append("inconsistent")
 
                 if len(set(date_formats)) > 1:

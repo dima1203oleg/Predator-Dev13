@@ -2,7 +2,6 @@
 Prometheus Configuration for CDC Pipeline Monitoring
 """
 
-
 # Prometheus configuration
 PROMETHEUS_CONFIG = """
 global:

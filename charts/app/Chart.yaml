@@ -1,0 +1,6 @@
+apiVersion: v2
+name: predator-app
+description: Predator Analytics v13 - core app
+type: application
+version: 0.1.0
+appVersion: "13.0"

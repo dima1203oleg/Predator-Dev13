@@ -1,0 +1,21 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pod-labels
+spec:
+  validationFailureAction: enforce
+  rules:
+    - name: require-owner-and-app
+      match:
+        resources:
+          kinds:
+            - Pod
+            - Deployment
+            - StatefulSet
+      validate:
+        message: "Resource must contain labels: app and owner"
+        pattern:
+          metadata:
+            labels:
+              app: "*"
+              owner: "*"

@@ -1,0 +1,132 @@
+global:
+  domain: predator-stage.example.com
+  storageClass: fast-ssd
+  imagePullSecrets: ["regcred"]
+
+api:
+  image: ghcr.io/dima1203oleg/predator-api:stage
+  replicas: 2
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "750m"
+      memory: "1Gi"
+  env:
+    DB_URL: postgresql://predator:password@postgres:5432/predator
+    OPENSEARCH_URL: http://opensearch:9200
+    QDRANT_URL: http://qdrant:6333
+    MINIO_URL: http://minio:9000
+    OLLAMA_URL: http://ollama.predator:11434
+    EMBED_MODEL: nomic-embed-text
+    EMBED_BATCH: "64"
+
+workers:
+  image: ghcr.io/dima1203oleg/predator-workers:stage
+  replicas: 2
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "750m"
+      memory: "1Gi"
+
+router-llm:
+  image: ghcr.io/dima1203oleg/predator-router:stage
+  replicas: 1
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
+
+ollama:
+  replicas: 1
+  nodeSelector:
+    pool: ml
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+    limits:
+      cpu: "3"
+      memory: "6Gi"
+  models:
+    - nomic-embed-text
+    - mxbai-embed-large
+
+postgres:
+  replicas: 2
+  storage:
+    size: 200Gi
+    class: fast-ssd
+  backups:
+    s3:
+      endpoint: http://minio:9000
+      bucket: pg-backups
+      accessKeyRef: vault:secret/data/minio#access
+      secretKeyRef: vault:secret/data/minio#secret
+
+opensearch:
+  replicas: 2
+  heap: 2g
+  ilm:
+    rolloverSize: 25gb
+    snapshotBucket: os-snapshots
+
+qdrant:
+  replicas: 2
+  storage:
+    size: 150Gi
+    class: fast-ssd
+
+minio:
+  replicas: 2
+  storage:
+    size: 500Gi
+
+redis:
+  replicas: 1
+  storage:
+    size: 20Gi
+
+neo4j:
+  replicas: 1
+  storage:
+    size: 100Gi
+
+mlflow:
+  replicas: 1
+  storage:
+    size: 100Gi
+
+kafka:
+  replicas: 1
+  storage:
+    size: 100Gi
+
+keycloak:
+  replicas: 1
+  storage:
+    size: 20Gi
+
+observability:
+  prometheus:
+    replicas: 1
+  grafana:
+    replicas: 1
+  loki:
+    replicas: 1
+  tempo:
+    replicas: 1
+
+gateway:
+  ingress:
+    enabled: true
+    className: nginx
+    tls:
+      enabled: true

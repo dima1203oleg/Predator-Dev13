@@ -1,0 +1,42 @@
+name: collect-docker-report
+
+on:
+    workflow_dispatch:
+
+jobs:
+    collect-and-report:
+        runs-on: ubuntu-latest
+        permissions:
+            issues: write
+            actions: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Run log collector
+              run: |
+                  set -euo pipefail
+                  bash ./scripts/collect_docker_logs.sh
+
+            - name: Upload diagnostics artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docker-diagnostics
+                  path: |
+                      logs/docker-diagnostics-*
+
+            - name: Create issue with run link
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  API_URL="${{ github.api_url }}"
+                  REPO="${{ github.repository }}"
+                  RUN_URL="${{ github.server_url }}/${REPO}/actions/runs/${{ github.run_id }}"
+                  TITLE="[Diagnostics] Docker logs from run #${{ github.run_number }}"
+                  BODY="Diagnostics artifact uploaded from run: ${RUN_URL}\n\nArtifact name: docker-diagnostics\n\nPlease download the artifact from the Actions run and attach it to the support ticket."
+
+                  echo "Creating issue in ${REPO}"
+                  curl -sS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+                    "${API_URL}/repos/${REPO}/issues" \
+                    -d "{\"title\": \"${TITLE}\", \"body\": \"${BODY}\"}"

@@ -1,7 +1,50 @@
-# 🦅 PREDATOR ANALYTICS v13 — Ollama-First Autonomous MAS Platform
 
-**Версія**: 13.0 Extended Final  
-**Статус**: ✅ Production-Ready  
+# Predator Analytics v13 — Automation-First Production Platform
+
+## Automation-First Production Rules
+
+**Важливо:**
+
+- ❌ **No local deploys** — всі production розгортання лише через CI/CD та GitOps (ArgoCD).
+- ✅ Всі секрети — через Vault/ExternalSecrets, `.env` лише для локального dev.
+- ✅ Всі зміни проходять через PR, автоматичні перевірки (lint, tests, KHAP, security, SBOM, signing).
+- ✅ Production-ready лише після проходження всіх SLO/SLA, DR drill, chaos tests.
+
+## CI/CD Pipeline
+
+1. **Lint & Tests**: ruff, pytest, helm lint/template
+2. **KHAP Security Gate**: kubeconform, kube-linter, Trivy, Kubescape, Kyverno (fail on any error)
+3. **Build & Push**: buildx multi-platform, push до registry
+4. **GitOps bump**: оновлення `platform/values-dev.yaml` у predator-gitops
+5. **ArgoCD Sync & Smoke**: auto-sync, health checks, smoke-job
+6. **Cosign Verify**: перевірка підпису образу
+7. **Promote**: ручне або автоматичне просування на stage/prod
+
+## Required GitHub Secrets
+
+- `GH_TOKEN` — для gitops push
+- `GITHUB_TOKEN` — для registry
+- `ARGOCD_TOKEN` або `ARGOCD_USER`/`ARGOCD_PASS` — для ArgoCD sync
+- `KUBE_CONFIG_DATA` — для kubectl
+- `COSIGN_VERIFY_REQUIRED` — (true/false) для обов'язкової перевірки підпису
+
+## SRE Runbook (Production)
+
+- **DR Drill**: запуск `infra/dr/DR-drill-playbook.md` для перевірки RTO/RPO
+- **Chaos**: запуск Litmus experiments (`infra/k8s-tests/chaos/`)
+- **Smoke**: запуск smoke-job (`infra/k8s-tests/smoke-job.yaml`)
+- **Observability**: перевірка алертів Prometheus/Grafana/Loki/Tempo
+- **Security**: перевірка Kyverno/NetworkPolicy/PodSecurity
+- **GitOps**: всі зміни через PR, ArgoCD auto-sync
+
+Докладніше — у `PRODUCTION_READINESS_REPORT.md`, `infra/observability/README.md`, `infra/dr/DR-drill-playbook.md`, `infra/policies/README.md`.
+
+
+
+**Версія**: 13.0 Extended Final
+
+**Статус**: ✅ Production-Ready
+
 **Готовність**: 100/100 — повний життєвий цикл: збір → зберігання → аналіз → інсайти → самонавчання
 
 ---
@@ -37,6 +80,7 @@ Predator Analytics v13 — це автономна **мультиагентна 
 ## 🚀 Швидкий старт
 
 ### Передумови
+
 - Docker Desktop 24+ / Kubernetes 1.28+
 - Helm 3.13+
 - Python 3.11+
@@ -89,9 +133,10 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 ---
 
+
 ## 🏗️ Архітектура (життєвий цикл запиту)
 
-```
+```ascii
 [UI: React/OpenWebUI/OS Dash + Voice STT/TTS] --Query/Upload--> [FastAPI/Kong Gateway] --Auth--> [Keycloak RBAC/PII-gate]
   |                                                     |
   v                                                     v
@@ -130,7 +175,9 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 ## 📊 Компоненти (деталі)
 
+
 ### 1. API (FastAPI, 100+ endpoints)
+
 - `/datasets/*` — CRUD, upload, process, status
 - `/search/*` — query (PG filter), semantic (Qdrant), full-text (OS)
 - `/voice/*` — STT (Whisper укр), TTS (pyttsx3 укр)
@@ -140,7 +187,9 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 **WebSocket**: `/ws/etl` (upload progress), `/ws/agents` (real-time logs)
 
+
 ### 2. Агенти (MAS, 30+)
+
 - **Data (10)**: Ingest/Registry/Indexer/Vector/OSINT/Telegram/PDF/Excel/Validator/Cleaner
 - **Query (5)**: SearchPlanner/ModelRouter/Arbiter/BillingGate/CacheManager
 - **Analysis (7)**: Anomaly/Forecast/Graph/Report/Risk/Pattern/Sentiment
@@ -151,7 +200,9 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 **Оркестрація**: LangGraph/CrewAI/AutoGen, heartbeats/retries/timeouts/DLQ, NEXUS_SUPERVISOR
 
+
 ### 3. Моделі (58 LLM, hybrid local/API)
+
 | Категорія | Моделі |
 |-----------|--------|
 | **Local (Ollama)** | Gemma 2 (2B/9B/27B), LLaMA 3.1 (8B/70B), Mistral (7B/Nemo/Small), Dolphin-Mixtral, Llama3-Groq-Tool-Use, OpenHermes 2.5, nomic-embed-text, mxbai-embed-large, bge-m3 |
@@ -159,7 +210,9 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 **ModelRouter**: primary/fallback/embed/vision, арбітраж (5+ LLM → найкраща відповідь), retry/throttling
 
+
 ### 4. Парсери (збір даних)
+
 - **Excel/CSV**: pandas chunked (10k rows), dedupe PK/op_hash
 - **PDF**: pdfplumber (OCR+tables)
 - **Telegram**: Telethon (messages/mentions/NER)
@@ -167,29 +220,39 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 **Збагачення**: EnrichmentAgent → реєстри/OSINT/NER → `entities.attrs` jsonb
 
+
 ### 5. CDC Pipeline (real-time sync)
+
 - **Triggers**: Debezium/Outbox → Kafka → Celery workers
 - **Batch**: 5min cron, cursor last_pk/ts, lag<100
 - **Replay**: Auto на збій, consistency suite (1% hashes щодня)
 
+
 ### 6. Фронтенди (3 UI)
+
 - **React Nexus Core**: 3D сфера (Three.js), графи (vis-network), upload progress, агенти map, smart-autocomplete, what-if симулятор, хроно-карта, settings (UA/EN/WCAG), голос
 - **OpenWebUI**: RAG-чат, upload PDF/Excel/Markdown, natural queries
 - **OpenSearch Dashboard**: Raw дашборди/heatmap/timeline, iframe в Nexus, Pro raw-access
 
+
 ### 7. Персоналізація (Daily Newspaper)
+
 1. **ClientUpload**: Клієнт завантажує дані (Excel/CSV/PDF)
 2. **Enrichment**: → реєстри/OSINT/NER
 3. **ComplianceRisk**: Скоринг (аномалії/sanctions/репутація)
 4. **PersonalFeed**: "Ранкова газета" (інсайти/ризики/конкуренти/рекомендації)
 
+
 ### 8. Самонавчання (query-driven LoRA)
+
 1. Запит/фідбек → Qdrant vector/classify (ContentRelevance score>0.7)
 2. QueryPatternLearner → LoRA dataset (synthetic + real)
 3. LoRATrainer cron → MLflow → LoRA fine-tune (F1 ≥0.95)
 4. Канарій deploy (5% traffic → rollout)
 
+
 ### 9. Голос (українською)
+
 - **STT**: Whisper fine-tuned укр, p95<2.5s, WebSocket streaming
 - **TTS**: pyttsx3 укр voice, MP3 streaming
 - **Інтеграція**: UI mic кнопка, чат voice message, логи для self-learning
@@ -208,14 +271,18 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 ## 📈 Observability (SRE)
 
+
 ### Prometheus/Grafana
+
 - **API**: Latency p95/p99, 5xx rate, RPS
 - **OpenSearch**: Heap usage, query latency, indexing rate
 - **Celery**: Queue depth, worker lag, task failures
 - **Qdrant**: Search latency, vector lag (<100)
 - **Voice**: STT/TTS latency p95 (<2.5s)
 
+
 ### Алерти (Burn-Rate 1h/6h)
+
 - `HighErrorRate`: 5xx >1% (1h)
 - `HighLatency`: p95 >800ms (6h)
 - `HeapHigh`: OS heap >85%
@@ -223,12 +290,16 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 - `VectorLagHigh`: lag >100
 - `DriftDetected`: PSI >0.2 (MLflow)
 
+
 ### AutoHeal (playbooks)
+
 - `lag_high` → scale Celery workers, replay cursor
 - `heap_high` → force_merge OS, scale pods
 - `5xx_spike` → rollback deploy, circuit breaker
 
+
 ### Loki/Tempo
+
 - Логи (errors/warnings, voice transcripts, agent traces)
 - Tracing (E2E запит: UI → API → PG → Qdrant → Arbiter → UI)
 
@@ -238,8 +309,10 @@ kubectl apply -f devops/argocd/applications/predator-prod.yaml
 
 ## 🛠️ DevOps (GitOps)
 
+
 ### Helm Umbrella Chart
-```
+
+```text
 helm/predator-umbrella/
 ├── Chart.yaml (deps: api, agents, frontend, db, observability)
 ├── values.yaml (global: imagePullPolicy, env, secretsRef)
@@ -248,20 +321,28 @@ helm/predator-umbrella/
 └── charts/ (20+ компонентів)
 ```
 
+
 ### ArgoCD (GitOps)
+
 - **Apps**: `predator-dev`, `predator-prod`
 - **Sync**: Auto (3min poll), canary/rollback
 - **Health**: Readiness/Liveness probes
 
+
 ### Tekton (CI/CD)
+
 - **Pipeline**: lint → unit → build → push → SBOM → sign → notify
 - **Triggers**: GitHub PR/push → EventListener
 
+
 ### Chaos Engineering (LitmusChaos)
+
 - **Experiments**: pod-kill, network-delay, disk-pressure
 - **AutoHeal**: Playbook replay (<5min recovery)
 
+
 ### DR (Disaster Recovery, Velero)
+
 - **Backup**: Daily (PG/OS/Qdrant/MinIO), retention 30d
 - **Drills**: Weekly (RTO ≤30min, RPO ≤15min)
 - **Sandbox**: Restore test namespace
@@ -270,30 +351,42 @@ helm/predator-umbrella/
 
 ## 🧪 Тестування
 
+
 ### Unit (pytest)
+
 - Агенти (Retriever/Miner/Arbiter)
 - API endpoints (auth/search/voice)
 - Парсери (pandas/pdfplumber/Telethon)
 
+
 ### Integration
+
 - PG-OS-Qdrant consistency (hashes check 1%)
 - CDC pipeline (insert → Debezium → Qdrant upsert)
 - Voice STT/TTS roundtrip
 
+
 ### E2E (Cypress)
+
 - Upload 500k rows → ETL → dashboard → search → voice → export
 - Персоналізація (ClientUpload → Newspaper)
 
+
 ### Performance (k6/Locust)
+
 - 1000 RPS API (p95<800ms)
 - 5M rows batch ETL (<60s per 100k)
 - Embed 1k texts (<60s)
 
+
 ### Chaos (LitmusChaos)
+
 - Pod-kill → AutoHeal restart (<5min)
 - Network-delay → retry/fallback
 
+
 ### Security (DAST)
+
 - ZAP scan (OWASP Top 10)
 - Trivy/CodeQL (CVE/SAST)
 
@@ -313,6 +406,7 @@ helm/predator-umbrella/
 
 ## 🎯 SLO/SLA
 
+
 | Компонент | SLI | SLO | Метрика |
 |-----------|-----|-----|---------|
 | API | p95 latency | <800ms | 99% |
@@ -329,6 +423,7 @@ helm/predator-umbrella/
 ---
 
 ## 🤝 Contributing
+
 
 1. Fork repo
 2. Create feature branch (`git checkout -b feature/your-feature`)

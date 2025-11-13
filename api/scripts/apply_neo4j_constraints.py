@@ -4,10 +4,11 @@ Apply Neo4j uniqueness constraints idempotently.
 This script is intended to be run as a Kubernetes Job (pre-sync hook) from ArgoCD
 to ensure required constraints exist before application traffic starts.
 """
+
 import os
 import sys
-from neo4j import GraphDatabase, basic_auth
 
+from neo4j import GraphDatabase, basic_auth
 
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
@@ -16,9 +17,9 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
 
 CONSTRAINTS = [
     # Neo4j 4+ syntax (idempotent with IF NOT EXISTS)
-    'CREATE CONSTRAINT IF NOT EXISTS FOR (c:Company) REQUIRE c.edrpou IS UNIQUE',
-    'CREATE CONSTRAINT IF NOT EXISTS FOR (p:Product) REQUIRE p.hs_code IS UNIQUE',
-    'CREATE CONSTRAINT IF NOT EXISTS FOR (co:Country) REQUIRE co.code IS UNIQUE',
+    "CREATE CONSTRAINT IF NOT EXISTS FOR (c:Company) REQUIRE c.edrpou IS UNIQUE",
+    "CREATE CONSTRAINT IF NOT EXISTS FOR (p:Product) REQUIRE p.hs_code IS UNIQUE",
+    "CREATE CONSTRAINT IF NOT EXISTS FOR (co:Country) REQUIRE co.code IS UNIQUE",
 ]
 
 

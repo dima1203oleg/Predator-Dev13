@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "predator-app.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "predator-app.name" . }}
+    helm.sh/chart: {{ include "predator-app.chart" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: {{ include "predator-app.name" . }} }
+  template:
+    metadata:
+      labels: { app.kubernetes.io:name: {{ include "predator-app.name" . }} }
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DB_URL
+              value: "{{ .Values.env.DB_URL }}"
+            - name: OPENSEARCH_URL
+              value: "{{ .Values.env.OPENSEARCH_URL }}"
+            - name: QDRANT_URL
+              value: "{{ .Values.env.QDRANT_URL }}"
+            - name: MINIO_URL
+              value: "{{ .Values.env.MINIO_URL }}"
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ include "predator-app.fullname" . }}, key: minioAccessKey }
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ include "predator-app.fullname" . }}, key: minioSecretKey }
+          ports: [{ containerPort: 8000 }]
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /live, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: {{ toYaml .Values.resources.requests | nindent 12 }}
+            limits:   {{ toYaml .Values.resources.limits   | nindent 12 }}

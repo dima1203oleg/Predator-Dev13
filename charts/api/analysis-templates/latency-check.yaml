@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: latency-check
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: p95-latency
+      interval: 1m
+      count: 3
+      successCondition: result < 0.8
+      provider:
+        prometheus:
+          address: http://prometheus-server.monitoring:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="{{args.service-name}}"}[5m])) by (le))

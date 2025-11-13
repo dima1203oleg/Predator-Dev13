@@ -206,8 +206,12 @@ async def core_middleware(request: Request, call_next):
 
     try:
         response = await call_next(request)
-        REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path, status=response.status_code).inc()
-        REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe((datetime.now() - start_time).total_seconds())
+        REQUEST_COUNT.labels(
+            method=request.method, endpoint=request.url.path, status=response.status_code
+        ).inc()
+        REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(
+            (datetime.now() - start_time).total_seconds()
+        )
         return response
     finally:
         ACTIVE_CONNECTIONS.dec()
@@ -250,40 +254,41 @@ async def upload_customs_data(
 ):
     """
     Upload customs data file and automatically index across all databases
-    
+
     Databases indexed:
     - PostgreSQL: structured data storage with deduplication
     - OpenSearch: full-text search (company names, HS codes, offices)
     - Qdrant: vector similarity search (embeddings)
     - Neo4j: graph relationships (companies, products, countries)
     - Redis: statistics caching (HS codes, companies, countries)
-    
+
     Returns:
         UploadResponse with processing statistics
     """
     import time
+
     from api.upload_service import MultiDatabaseUploadService
-    
+
     start_time = time.time()
     temp_path = None
-    
+
     try:
         logger.info(f"📤 Upload started by user '{user.username}': {file.filename}")
-        
+
         # Auto-generate dataset name if not provided
         if not dataset_name:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            base_name = file.filename.rsplit('.', 1)[0]
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            base_name = file.filename.rsplit(".", 1)[0]
             dataset_name = f"customs_{timestamp}_{base_name}"
-        
+
         # Save temp file
         temp_path = f"/tmp/upload_{datetime.now().timestamp()}_{file.filename}"
         content = await file.read()
         with open(temp_path, "wb") as f:
             f.write(content)
-        
+
         logger.info(f"✅ Saved temp file: {temp_path}")
-        
+
         # Process upload using Multi-Database service
         upload_service = MultiDatabaseUploadService()
         result = await upload_service.process_upload(
@@ -291,19 +296,19 @@ async def upload_customs_data(
             filename=file.filename,
             dataset_name=dataset_name,
             owner=user.username,
-            db=db
+            db=db,
         )
-        
+
         # Cleanup temp file
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
-            logger.info(f"🗑️ Cleaned up temp file")
-        
+            logger.info("🗑️ Cleaned up temp file")
+
         # Update Prometheus metrics
         CUSTOMS_RECORDS_TOTAL.inc(result["records_processed"])
-        
+
         processing_time = time.time() - start_time
-        
+
         # Log summary
         logger.info(
             "Upload completed for user '%s', file '%s', dataset '%s'. "
@@ -316,7 +321,7 @@ async def upload_customs_data(
             result["failed"],
             processing_time,
         )
-        
+
         if result["errors"]:
             logger.warning("⚠️ Errors during indexing: %s", result["errors"])
 
@@ -334,10 +339,7 @@ async def upload_customs_data(
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
-        raise HTTPException(
-            status_code=500,
-            detail=f"Upload failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @app.post("/api/v1/customs/search")

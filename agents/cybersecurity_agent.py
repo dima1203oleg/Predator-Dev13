@@ -34,9 +34,7 @@ class CybersecurityAgent(BaseAgent):
     Uses ML models and rule-based systems for comprehensive security
     """
 
-    def __init__(
-        self, agent_id: str = "cybersecurity_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "cybersecurity_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Security configuration

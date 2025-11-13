@@ -1,0 +1,9 @@
+apiVersion: minio.min.io/v2beta1
+kind: Bucket
+metadata:
+  name: predator-backups
+  namespace: minio
+spec:
+  name: predator-backups
+  versioning:
+    enabled: true

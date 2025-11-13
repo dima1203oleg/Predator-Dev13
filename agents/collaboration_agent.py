@@ -22,9 +22,7 @@ class CollaborationAgent(BaseAgent):
     Handles team workflows, communication channels, project coordination, and collaboration tools
     """
 
-    def __init__(
-        self, agent_id: str = "collaboration_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "collaboration_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Collaboration configuration

@@ -1,0 +1,12 @@
+# pgBackRest Helm values for Predator Analytics
+pgbackrest:
+  repoPath: /backrestrepo
+  backupSchedule: "0 */4 * * *"
+  retentionFull: 7
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi

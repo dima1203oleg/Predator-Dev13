@@ -23,9 +23,7 @@ class PersonalFeedAgent(BaseAgent):
     Learns user preferences and generates customized content digests
     """
 
-    def __init__(
-        self, agent_id: str = "personal_feed_agent", config: dict[str, Any] | None = None
-    ):
+    def __init__(self, agent_id: str = "personal_feed_agent", config: dict[str, Any] | None = None):
         super().__init__(agent_id, config or {})
 
         # Personalization settings
@@ -627,9 +625,7 @@ class PersonalFeedAgent(BaseAgent):
             # Identify breaking news (high priority items)
             breaking_news = [
                 item for item in selected_content if item.get("priority") in ["high", "urgent"]
-            ][
-                :3
-            ]  # Top 3
+            ][:3]  # Top 3
 
             newspaper["summary"]["breaking_news"] = [
                 {"id": item["id"], "title": item["title"], "category": item["category"]}

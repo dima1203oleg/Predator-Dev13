@@ -400,7 +400,7 @@ class RecommendationAgent(BaseAgent):
                                 "confidence": 1.0,  # Could be based on prediction variance
                             }
                         )
-                    except:
+                    except Exception:
                         continue
 
                 # Sort by predicted rating
@@ -1370,9 +1370,9 @@ class RecommendationAgent(BaseAgent):
 
             # Update interaction
             if rating is not None:
-                self.recommendation_state["user_profiles"][user_id]["interactions"][
-                    item_id
-                ] = rating
+                self.recommendation_state["user_profiles"][user_id]["interactions"][item_id] = (
+                    rating
+                )
 
             # Add to feedback loop
             feedback_entry = {
