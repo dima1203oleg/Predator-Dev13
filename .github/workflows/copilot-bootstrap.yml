@@ -1,0 +1,11 @@
+name: Copilot Bootstrap
+
+on:
+  workflow_dispatch:
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Copilot Bootstrap Active
+        run: echo "GitHub Copilot instructions active."
